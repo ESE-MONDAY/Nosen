@@ -22,7 +22,7 @@ import {
 
 const IncomeStreamsPage = () => {
   const { theme } = useTheme();
-  const { profile, hasProfile } = useProfile();
+  const { hasProfile } = useProfile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('all');
 

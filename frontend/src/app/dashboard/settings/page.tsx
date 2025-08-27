@@ -10,17 +10,9 @@ import {
   User, 
   Bell, 
   Shield, 
-  Globe, 
   Activity,
   Eye,
   EyeOff,
-  Key,
-  Mail,
-  Phone,
-  Calendar,
-  Building,
-  Wallet,
-  FileText,
   Download,
   Trash2,
   Edit3,
@@ -29,7 +21,7 @@ import {
 
 const SettingsPage = () => {
   const { theme, toggleTheme } = useTheme();
-  const { profile, hasProfile } = useProfile();
+  const { profile } = useProfile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
@@ -105,23 +97,7 @@ const SettingsPage = () => {
     { code: 'zh', name: '中文' }
   ];
 
-  if (!hasProfile) {
-    return (
-      <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-900' : 'bg-slate-50'}`}>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <Settings className="w-16 h-16 mx-auto mb-4 text-slate-400" />
-            <h1 className={`text-2xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-              Complete Your Profile First
-            </h1>
-            <p className={`text-lg ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
-              You need to create your ENS profile before accessing settings
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-900' : 'bg-slate-50'}`}>

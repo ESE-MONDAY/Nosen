@@ -6,7 +6,6 @@ import { useProfile } from '../../contexts/ProfileContext';
 import SimpleSidebar from '../../components/SimpeSidebar';
 import { 
   CreditCard, 
-  Filter, 
   Search, 
   Download, 
   ExternalLink, 
@@ -20,7 +19,7 @@ import {
 
 const TransactionsPage = () => {
   const { theme } = useTheme();
-  const { profile, hasProfile } = useProfile();
+  const { hasProfile } = useProfile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');

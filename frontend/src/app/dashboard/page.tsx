@@ -15,27 +15,23 @@ import {
   Building,
   Globe,
   Link,
-  Eye,
   Edit3,
   Filter,
   Search,
-  Bell,
-  Settings,
   User,
   ChevronDown,
   ExternalLink,
-  Award,
   Target,
   Menu
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useProfile } from '../contexts/ProfileContext';
 import SimpleSidebar from '../components/SimpeSidebar';
-import WalletStatus from '../components/WalletStatus';
+
 
 const NosenDashboard = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('30d');
-  const [selectedFilter, setSelectedFilter] = useState('all');
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme } = useTheme();
   const { profile, hasProfile, isLoading } = useProfile();
@@ -200,7 +196,7 @@ const NosenDashboard = () => {
               Welcome to Nosen! 🎉
             </h1>
             <p className={`text-lg mb-8 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
-              You're almost ready to start managing your Web3 income. Let's set up your profile.
+              You&apos;re almost ready to start managing your Web3 income. Let&apos;s set up your profile.
             </p>
             
             <div className={`p-8 rounded-xl border max-w-2xl mx-auto ${
@@ -210,7 +206,7 @@ const NosenDashboard = () => {
                 Complete Your Profile Setup
               </h2>
               <p className={`mb-6 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
-                To get started, you'll need to:
+                To get started, you&apos;ll need to:
               </p>
               
               <div className="space-y-4 text-left">
@@ -311,7 +307,7 @@ const NosenDashboard = () => {
                   Welcome back, {profile?.displayName || 'User'}! 👋
                 </h1>
                 <p className={`mt-1 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
-                  Here's your Web3 income overview for December 2024
+                  Here&apos;s your Web3 income overview for December 2024
                 </p>
                 {profile && (
                   <div className={`mt-3 p-3 rounded-lg border ${theme === 'dark' ? 'border-blue-600/30 bg-blue-900/20' : 'border-blue-300 bg-blue-50'}`}>

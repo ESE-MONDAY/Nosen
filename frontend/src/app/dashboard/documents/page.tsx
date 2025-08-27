@@ -9,7 +9,6 @@ import {
   Download, 
   Plus, 
   Search, 
-  Filter, 
   Calendar, 
   DollarSign, 
   CheckCircle, 
@@ -21,17 +20,16 @@ import {
   Trash2,
   ExternalLink,
   Shield,
-  Globe,
   Building
 } from 'lucide-react';
 
 const DocumentsPage = () => {
   const { theme } = useTheme();
-  const { profile, hasProfile } = useProfile();
+  const { hasProfile } = useProfile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
+
 
   // Mock documents data - would come from generated income verification docs
   const documents = [
@@ -205,7 +203,6 @@ const DocumentsPage = () => {
               
               <div className="mt-4 md:mt-0">
                 <button 
-                  onClick={() => setShowGenerateModal(true)}
                   className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center text-sm font-medium"
                 >
                   <Plus className="w-4 h-4 mr-2" />

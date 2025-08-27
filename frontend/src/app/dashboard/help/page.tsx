@@ -18,14 +18,13 @@ import {
   FileText,
   Users,
   Globe,
-  Shield,
   Zap,
   CheckCircle
 } from 'lucide-react';
 
 const HelpPage = () => {
   const { theme } = useTheme();
-  const { profile, hasProfile } = useProfile();
+  const { hasProfile } = useProfile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);

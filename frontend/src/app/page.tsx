@@ -1,9 +1,10 @@
 'use client'
 import React from 'react';
-import { ChevronRight, Shield, FileText, Globe, Check, ArrowRight, Zap, Users, TrendingUp, Wallet, Building, CreditCard, Eye, Link, Award, Clock, MapPin, DollarSign, Briefcase, UserCheck } from 'lucide-react';
+import { ChevronRight, Shield, FileText, Globe, Check, ArrowRight, Zap, TrendingUp, Wallet, Building, CreditCard, Eye, Link, Award, Clock, MapPin, DollarSign, Briefcase, UserCheck } from 'lucide-react';
 import { useTheme } from './contexts/ThemeContext';
 import ConnectWallet from './components/ConnectWallet';
 import { useAccount } from 'wagmi';
+
 import { useProfile } from './contexts/ProfileContext';
 import { useRouter } from 'next/navigation';
 
@@ -98,6 +99,74 @@ const NosenLanding = () => {
     { number: "12", label: "Countries Supported", subtext: "Expanding monthly" },
     { number: "99%", label: "Document Acceptance", subtext: "By institutions worldwide" }
   ];
+
+  const GetStartedButton: React.FC = () => {
+    const { isConnected } = useAccount();
+    const { hasProfile, isLoading } = useProfile();
+    const router = useRouter();
+
+    if (isLoading) {
+      return (
+        <div className="px-8 py-4 rounded-xl font-semibold bg-slate-300 text-slate-600">
+          Loading...
+        </div>
+      );
+    }
+
+    if (hasProfile) {
+      return (
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className={`px-8 py-4 rounded-xl font-semibold transition-all flex items-center gap-2 ${
+              theme === 'dark'
+                ? 'bg-green-600 hover:bg-green-700 text-white'
+                : 'bg-green-600 hover:bg-green-700 text-white'
+            }`}
+          >
+            <UserCheck className="w-5 h-5" />
+            Go to Dashboard
+          </button>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className={`px-8 py-4 rounded-xl font-semibold transition-all flex items-center gap-2 border-2 ${
+              theme === 'dark'
+                ? 'border-slate-600 text-slate-300 hover:bg-slate-800'
+                : 'border-slate-300 text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <Eye className="w-5 h-5" />
+            View Profile
+          </button>
+        </div>
+      );
+    }
+
+    if (isConnected) {
+      return (
+        <button
+          onClick={() => router.push('/create-profile')}
+          className={`px-8 py-4 rounded-xl font-semibold transition-all flex items-center gap-2 ${
+            theme === 'dark'
+              ? 'bg-green-600 hover:bg-green-700 text-white'
+              : 'bg-green-600 hover:bg-green-700 text-white'
+          }`}
+        >
+          <UserCheck className="w-5 h-5" />
+          Create Your ENS Profile
+        </button>
+      );
+    }
+
+    return (
+      <div className="text-center">
+        <ConnectWallet />
+        <p className="text-sm mt-2 opacity-75">
+          Connect your wallet to get started
+        </p>
+      </div>
+    );
+  };
 
   const targetUsers = [
     {
@@ -363,8 +432,8 @@ const NosenLanding = () => {
             <div className={`inline-block rounded-2xl p-8 max-w-4xl ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-700'}`}>
               <h3 className="text-xl font-bold text-emerald-400 mb-4">Success Story</h3>
               <blockquote className="text-slate-300 italic text-lg">
-                "I got my UK visa approved using Nosen payslips showing my $3,500/month DAO income. 
-                The embassy officer could verify my john-dev.nosen.eth identity and see 8 months of consistent payments from Gitcoin."
+                &ldquo;I got my UK visa approved using Nosen payslips showing my $3,500/month DAO income. 
+                The embassy officer could verify my john-dev.nosen.eth identity and see 8 months of consistent payments from Gitcoin.&rdquo;
               </blockquote>
               <div className="mt-4 text-slate-400">
                 - Adebayo K., Lagos → London visa approved
@@ -435,7 +504,7 @@ const NosenLanding = () => {
             Ready to Legitimize Your Crypto Income?
           </h2>
           <p className={`text-xl mb-8 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-100'}`}>
-            Join 10,000+ Web3 professionals who've made their crypto income officially recognized
+            Join 10,000+ Web3 professionals who&apos;ve made their crypto income officially recognized
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <ConnectWallet />
@@ -510,73 +579,5 @@ const NosenLanding = () => {
   );
 };
 
+
 export default NosenLanding;
-
-const GetStartedButton: React.FC = () => {
-  const { theme } = useTheme();
-  const { isConnected } = useAccount();
-  const { hasProfile, isLoading } = useProfile();
-  const router = useRouter();
-
-  if (isLoading) {
-    return (
-      <div className="px-8 py-4 rounded-xl font-semibold bg-slate-300 text-slate-600">
-        Loading...
-      </div>
-    );
-  }
-
-  if (hasProfile) {
-    return (
-      <div className="flex flex-col sm:flex-row gap-4">
-        <button
-          onClick={() => router.push('/dashboard')}
-          className={`px-8 py-4 rounded-xl font-semibold transition-all flex items-center gap-2 ${
-            theme === 'dark'
-              ? 'bg-green-600 hover:bg-green-700 text-white'
-              : 'bg-green-600 hover:bg-green-700 text-white'
-          }`}
-        >
-          <UserCheck className="w-5 h-5" />
-          Go to Dashboard
-        </button>
-        <button
-          onClick={() => router.push('/dashboard')}
-          className={`px-8 py-4 rounded-xl font-semibold transition-all flex items-center gap-2 border-2 ${
-            theme === 'dark'
-              ? 'border-slate-600 text-slate-300 hover:bg-slate-800'
-              : 'border-slate-300 text-slate-700 hover:bg-slate-50'
-          }`}
-        >
-          <Eye className="w-5 h-5" />
-          View Profile
-        </button>
-      </div>
-    );
-  }
-
-  if (isConnected) {
-    return (
-      <button
-        onClick={() => router.push('/create-profile')}
-        className={`px-8 py-4 rounded-xl font-semibold transition-all flex items-center gap-2 ${
-          theme === 'dark'
-            ? 'bg-green-600 hover:bg-green-700 text-white'
-            : 'bg-green-600 hover:bg-green-700 text-white'
-        }`}
-      >
-        <UserCheck className="w-5 h-5" />
-        Create Your ENS Profile
-      </button>
-    );
-  }
-
-  return (
-    <div className="text-center">
-      <ConnectWallet />
-      <p className="text-sm mt-2 opacity-75">
-        Connect your wallet to get started
-      </p>
-    </div>
-  );
-};

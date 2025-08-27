@@ -69,8 +69,8 @@ export class ENSService {
         return true;
       }
       return false;
-    } catch (error: any) {
-      if (error.code === 4902) {
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 4902) {
         // Chain not added, try to add it
         try {
           await window.ethereum.request({
@@ -399,7 +399,15 @@ export class ENSService {
   /**
    * Fetch data from IPFS using HTTP gateway
    */
-  private async fetchFromIPFS(ipfsHash: string): Promise<any> {
+  private async fetchFromIPFS(ipfsHash: string): Promise<{
+    name: string;
+    description: string;
+    avatar?: string;
+    website?: string;
+    twitter?: string;
+    github?: string;
+    created_at?: string;
+  }> {
     try {
       // Try to fetch from IPFS gateway
       const response = await fetch(`${IPFS_CONFIG.gateway}${ipfsHash}`);

@@ -7,28 +7,20 @@ import SimpleSidebar from '../../components/SimpeSidebar';
 import { 
   BarChart3, 
   Download, 
-  Calendar, 
   TrendingUp, 
   TrendingDown, 
   DollarSign, 
   Activity,
-  Eye,
-  Filter,
-  Search,
   Globe,
   Building,
-  Wallet,
   FileText,
-  PieChart,
-  LineChart,
   Target,
-  Zap,
   Plus
 } from 'lucide-react';
 
 const ReportsPage = () => {
   const { theme } = useTheme();
-  const { profile, hasProfile } = useProfile();
+  const { hasProfile } = useProfile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('30d');
   const [selectedReport, setSelectedReport] = useState('income');

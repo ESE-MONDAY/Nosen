@@ -9,9 +9,7 @@ import {
   Download, 
   Plus, 
   Search, 
-  Filter, 
   Calendar, 
-  DollarSign, 
   CheckCircle, 
   Clock,
   AlertCircle,
@@ -30,7 +28,7 @@ import {
 
 const TaxCompliancePage = () => {
   const { theme } = useTheme();
-  const { profile, hasProfile } = useProfile();
+  const { hasProfile } = useProfile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');

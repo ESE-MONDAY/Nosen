@@ -296,7 +296,7 @@ const CreateProfilePage = () => {
               <p className={`text-xs mt-1 ${
                 theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
               }`}>
-                How you'll appear to others on the platform
+                How you&apos;ll appear to others on the platform
               </p>
             </div>
 
@@ -380,7 +380,7 @@ const CreateProfilePage = () => {
               • Profile metadata will be stored securely on IPFS
             </p>
             <p className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
-              • You'll be redirected to your dashboard to start building your profile
+              • You&apos;ll be redirected to your dashboard to start building your profile
             </p>
             <p className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
               • Gas fees will be charged for the blockchain transaction

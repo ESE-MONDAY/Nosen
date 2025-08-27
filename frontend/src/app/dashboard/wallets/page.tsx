@@ -19,13 +19,12 @@ import {
   X,
   ChevronRight,
   Globe,
-  Building,
-  Zap
+  Building
 } from 'lucide-react';
 
 const WalletsPage = () => {
   const { theme } = useTheme();
-  const { profile, hasProfile } = useProfile();
+  const { hasProfile } = useProfile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showAddWallet, setShowAddWallet] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -154,7 +153,7 @@ const WalletsPage = () => {
     }
   };
 
-  const handleAddWallet = (walletOption: any) => {
+  const handleAddWallet = (walletOption: { id: string; name: string; logo: string; category: string; description: string }) => {
     console.log('Adding wallet:', walletOption);
     // Here you would implement the actual wallet connection logic
     setShowAddWallet(false);

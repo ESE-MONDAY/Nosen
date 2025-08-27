@@ -8,7 +8,6 @@ import {
   Building, 
   Plus, 
   Search, 
-  Filter, 
   Calendar, 
   CheckCircle, 
   Clock,
@@ -21,18 +20,17 @@ import {
   Shield,
   UserCheck,
   Mail,
-  Phone,
   Globe,
   DollarSign
 } from 'lucide-react';
 
 const EmployerVerificationPage = () => {
   const { theme } = useTheme();
-  const { profile, hasProfile } = useProfile();
+  const { hasProfile } = useProfile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showAddEmployer, setShowAddEmployer] = useState(false);
+
 
   // Mock employer verification data - would come from API
   const employers = [
@@ -209,7 +207,6 @@ const EmployerVerificationPage = () => {
               
               <div className="mt-4 md:mt-0">
                 <button 
-                  onClick={() => setShowAddEmployer(true)}
                   className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center text-sm font-medium"
                 >
                   <Plus className="w-4 h-4 mr-2" />
