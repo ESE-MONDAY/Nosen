@@ -14,13 +14,22 @@ import {
   Trash2,
   Shield,
   Activity,
-  TrendingUp
+  TrendingUp,
+  Search,
+  X,
+  ChevronRight,
+  Globe,
+  Building,
+  Zap
 } from 'lucide-react';
 
 const WalletsPage = () => {
   const { theme } = useTheme();
   const { profile, hasProfile } = useProfile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showAddWallet, setShowAddWallet] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Mock wallet data - would come from blockchain/API
   const wallets = [
@@ -59,6 +68,65 @@ const WalletsPage = () => {
     }
   ];
 
+  // Wallet connection options inspired by Koinly
+  const walletOptions = {
+    popular: [
+      { id: 'metamask', name: 'MetaMask', logo: '🦊', category: 'wallets', description: 'Browser extension wallet' },
+      { id: 'rainbow', name: 'Rainbow', logo: '🌈', category: 'wallets', description: 'Mobile wallet app' },
+      { id: 'coinbase', name: 'Coinbase Wallet', logo: '🪙', category: 'wallets', description: 'Exchange wallet' },
+      { id: 'trust', name: 'Trust Wallet', logo: '🛡️', category: 'wallets', description: 'Mobile wallet' },
+      { id: 'phantom', name: 'Phantom', logo: '👻', category: 'wallets', description: 'Solana wallet' }
+    ],
+    all: [
+      // Wallets
+      { id: 'metamask', name: 'MetaMask', logo: '🦊', category: 'wallets', description: 'Browser extension wallet' },
+      { id: 'rainbow', name: 'Rainbow', logo: '🌈', category: 'wallets', description: 'Mobile wallet app' },
+      { id: 'coinbase', name: 'Coinbase Wallet', logo: '🪙', category: 'wallets', description: 'Exchange wallet' },
+      { id: 'trust', name: 'Trust Wallet', logo: '🛡️', category: 'wallets', description: 'Mobile wallet' },
+      { id: 'phantom', name: 'Phantom', logo: '👻', category: 'wallets', description: 'Solana wallet' },
+      { id: 'imtoken', name: 'imToken', logo: '🔐', category: 'wallets', description: 'Mobile wallet' },
+      { id: 'argent', name: 'Argent', logo: '🦄', category: 'wallets', description: 'Smart contract wallet' },
+      { id: 'gnosis', name: 'Gnosis Safe', logo: '🛡️', category: 'wallets', description: 'Multi-sig wallet' },
+      
+      // Exchanges
+      { id: 'binance', name: 'Binance', logo: '🟡', category: 'exchanges', description: 'Centralized exchange' },
+      { id: 'coinbase', name: 'Coinbase', logo: '🪙', category: 'exchanges', description: 'Centralized exchange' },
+      { id: 'kraken', name: 'Kraken', logo: '🐙', category: 'exchanges', description: 'Centralized exchange' },
+      { id: 'kucoin', name: 'KuCoin', logo: '🔵', category: 'exchanges', description: 'Centralized exchange' },
+      { id: 'okx', name: 'OKX', logo: '⚫', category: 'exchanges', description: 'Centralized exchange' },
+      
+      // Blockchains
+      { id: 'ethereum', name: 'Ethereum', logo: '🔷', category: 'blockchains', description: 'Smart contract platform' },
+      { id: 'polygon', name: 'Polygon', logo: '🟣', category: 'blockchains', description: 'Layer 2 scaling' },
+      { id: 'arbitrum', name: 'Arbitrum', logo: '🔵', category: 'blockchains', description: 'Layer 2 scaling' },
+      { id: 'optimism', name: 'Optimism', logo: '🟠', category: 'blockchains', description: 'Layer 2 scaling' },
+      { id: 'solana', name: 'Solana', logo: '🟢', category: 'blockchains', description: 'High-performance blockchain' },
+      { id: 'avalanche', name: 'Avalanche', logo: '🔴', category: 'blockchains', description: 'DeFi platform' },
+      
+      // Services
+      { id: 'uniswap', name: 'Uniswap', logo: '🦄', category: 'services', description: 'DEX protocol' },
+      { id: 'aave', name: 'Aave', logo: '👻', category: 'services', description: 'Lending protocol' },
+      { id: 'compound', name: 'Compound', logo: '🔷', category: 'services', description: 'Lending protocol' },
+      { id: 'curve', name: 'Curve', logo: '📈', category: 'services', description: 'Stablecoin DEX' },
+      { id: 'balancer', name: 'Balancer', logo: '⚖️', category: 'services', description: 'AMM protocol' }
+    ]
+  };
+
+  const categories = [
+    { id: 'all', name: 'All', count: walletOptions.all.length },
+    { id: 'wallets', name: 'Wallets', count: walletOptions.all.filter(w => w.category === 'wallets').length },
+    { id: 'exchanges', name: 'Exchanges', count: walletOptions.all.filter(w => w.category === 'exchanges').length },
+    { id: 'blockchains', name: 'Blockchains', count: walletOptions.all.filter(w => w.category === 'blockchains').length },
+    { id: 'services', name: 'Services', count: walletOptions.all.filter(w => w.category === 'services').length }
+  ];
+
+  const filteredOptions = walletOptions.all.filter(option => {
+    const matchesCategory = selectedCategory === 'all' || option.category === selectedCategory;
+    const matchesSearch = option.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         option.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
   const copyAddress = (address: string) => {
     navigator.clipboard.writeText(address);
     // You could add a toast notification here
@@ -84,6 +152,12 @@ const WalletsPage = () => {
       default:
         return <AlertCircle className="w-4 h-4 text-yellow-600" />;
     }
+  };
+
+  const handleAddWallet = (walletOption: any) => {
+    console.log('Adding wallet:', walletOption);
+    // Here you would implement the actual wallet connection logic
+    setShowAddWallet(false);
   };
 
   if (!hasProfile) {
@@ -139,7 +213,10 @@ const WalletsPage = () => {
               </div>
               
               <div className="mt-4 md:mt-0">
-                <button className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center text-sm font-medium">
+                <button 
+                  onClick={() => setShowAddWallet(true)}
+                  className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center text-sm font-medium"
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Add New Wallet
                 </button>
@@ -289,6 +366,141 @@ const WalletsPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Add Wallet Modal */}
+      {showAddWallet && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-xl border ${
+            theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+          }`}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+              <div>
+                <h2 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                  Add your wallets
+                </h2>
+                <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Connect your cryptocurrency wallets and exchanges
+                </p>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setShowAddWallet(false)}
+                  className={`p-2 rounded-lg transition-colors ${
+                    theme === 'dark' ? 'hover:bg-slate-700' : 'hover:bg-slate-100'
+                  }`}
+                >
+                  <X className="w-5 h-5 text-slate-500" />
+                </button>
+                <button className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center text-sm font-medium">
+                  Continue <ChevronRight className="w-4 h-4 ml-1" />
+                </button>
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+              <div className="relative">
+                <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Paste your wallet address or search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg text-sm transition-colors ${
+                    theme === 'dark' ? 'border-slate-600 bg-slate-700 text-white' : 'border-slate-300 bg-white text-slate-900'
+                  }`}
+                />
+              </div>
+            </div>
+
+            {/* Category Tabs */}
+            <div className="px-6 border-b border-slate-200 dark:border-slate-700">
+              <div className="flex space-x-1">
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => setSelectedCategory(category.id)}
+                    className={`px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                      selectedCategory === category.id
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+                        : theme === 'dark'
+                          ? 'text-slate-400 hover:text-slate-300 hover:bg-slate-700'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                  >
+                    {category.name} ({category.count})
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Popular Section */}
+              <div className="mb-8">
+                <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                  POPULAR
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {walletOptions.popular.map((option) => (
+                    <button
+                      key={option.id}
+                      onClick={() => handleAddWallet(option)}
+                      className={`p-4 rounded-lg border text-left transition-colors hover:border-emerald-300 hover:shadow-md ${
+                        theme === 'dark' ? 'border-slate-600 bg-slate-700 hover:bg-slate-600' : 'border-slate-200 bg-white hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="text-2xl">{option.logo}</div>
+                        <div>
+                          <h4 className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                            {option.name}
+                          </h4>
+                          <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                            {option.description}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* All Section */}
+              <div>
+                <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                  ALL
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      onClick={() => handleAddWallet(option)}
+                      className={`p-4 rounded-lg border text-left transition-colors hover:border-emerald-300 hover:shadow-md ${
+                        theme === 'dark' ? 'border-slate-600 bg-slate-700 hover:bg-slate-600' : 'border-slate-200 bg-white hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="text-2xl">{option.logo}</div>
+                        <div>
+                          <h4 className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                            {option.name}
+                          </h4>
+                          <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                            {option.description}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
