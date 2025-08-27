@@ -5,6 +5,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '../contexts/ThemeContext';
+import { useProfile } from '../contexts/ProfileContext';
 import { 
   LayoutDashboard,
   Wallet,
@@ -30,6 +31,7 @@ interface SimpleSidebarProps {
 const SimpleSidebar: React.FC<SimpleSidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
   const pathname = usePathname();
   const { theme } = useTheme();
+  const { profile, hasProfile } = useProfile();
 
   const navigation = [
     {
@@ -151,13 +153,15 @@ const SimpleSidebar: React.FC<SimpleSidebarProps> = ({ sidebarOpen, setSidebarOp
           </div>
           <div className="flex-1">
             <p className={`text-sm font-medium truncate ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-              john-devrel.nosen.eth
+              {hasProfile ? profile?.ensName : 'Connect Wallet'}
             </p>
             <p className={`text-xs truncate ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-              Verified Professional
+              {hasProfile ? 'Verified Professional' : 'Not Connected'}
             </p>
           </div>
-          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+          <div className={`w-2 h-2 rounded-full ${
+            hasProfile ? 'bg-green-400' : 'bg-gray-400'
+          }`}></div>
         </div>
       </div>
 

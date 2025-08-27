@@ -2,15 +2,20 @@
 import React from 'react';
 import { ChevronRight, Shield, FileText, Globe, Check, ArrowRight, Zap, Users, TrendingUp, Wallet, Building, CreditCard, Eye, Link, Award, Clock, MapPin, DollarSign, Briefcase, UserCheck } from 'lucide-react';
 import { useTheme } from './contexts/ThemeContext';
+import ConnectWallet from './components/ConnectWallet';
+import { useAccount } from 'wagmi';
+import { useProfile } from './contexts/ProfileContext';
+import { useRouter } from 'next/navigation';
 
 const NosenLanding = () => {
   const { theme } = useTheme();
+  const { profile, hasProfile } = useProfile();
 
   const coreFeatures = [
     {
       icon: <UserCheck className="w-8 h-8" />,
       title: "ENS Professional Identity",
-      description: "Get john-devrel.nosen.eth instead of 0x742d35... Create a professional, memorable crypto identity for visa applications and employers."
+      description: `Get ${hasProfile ? profile?.ensName : 'yourname.nosen.eth'} instead of 0x742d35... Create a professional, memorable crypto identity for visa applications and employers.`
     },
     {
       icon: <FileText className="w-8 h-8" />,
@@ -70,7 +75,7 @@ const NosenLanding = () => {
     {
       title: "Professional Identity",
       before: "0x742d35Cc6634C0532925a3b8D...",
-      after: "john-devrel.nosen.eth",
+      after: hasProfile ? profile?.ensName : "yourname.nosen.eth",
       description: "Human-readable identity for professional use"
     },
     {
@@ -149,22 +154,20 @@ const NosenLanding = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button className="group bg-emerald-600 text-white px-8 py-4 rounded-xl hover:bg-emerald-700 transition-all transform hover:scale-105 flex items-center font-semibold text-lg shadow-lg hover:shadow-xl">
-                Claim Your ENS Identity
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-              
-              <button className="group border-2 border-slate-300 text-slate-700 px-8 py-4 rounded-xl hover:border-slate-400 transition-all flex items-center font-semibold">
-                View Live Demo
-                <Eye className="ml-2 w-5 h-5 group-hover:scale-110 transition-transform" />
-              </button>
+              <GetStartedButton />
             </div>
 
             {/* Example ENS Identity */}
             <div className={`mt-8 p-4 rounded-xl border max-w-md mx-auto ${theme === 'dark' ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-200'}`}>
-              <div className={`text-sm mb-2 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Your Professional Identity:</div>
-              <div className="font-mono text-emerald-600 font-semibold">yourname-dev.nosen.eth</div>
-              <div className={`text-xs mt-1 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Verifiable • Professional • Memorable</div>
+              <div className={`text-sm mb-2 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                {hasProfile ? 'Your Professional Identity:' : 'Example Professional Identity:'}
+              </div>
+              <div className="font-mono text-emerald-600 font-semibold">
+                {hasProfile ? profile?.ensName : 'yourname-dev.nosen.eth'}
+              </div>
+              <div className={`text-xs mt-1 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+                {hasProfile ? 'Active • Verified • Professional' : 'Verifiable • Professional • Memorable'}
+              </div>
             </div>
           </div>
 
@@ -435,10 +438,7 @@ const NosenLanding = () => {
             Join 10,000+ Web3 professionals who've made their crypto income officially recognized
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-emerald-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-emerald-700 transition-all transform hover:scale-105 shadow-lg flex items-center space-x-2">
-              <Wallet className="w-5 h-5" />
-              <span>Connect Wallet</span>
-            </button>
+            <ConnectWallet />
             <button className="border-2 border-emerald-600 text-emerald-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-emerald-600 hover:text-white transition-all">
               View Documentation
             </button>
@@ -511,3 +511,72 @@ const NosenLanding = () => {
 };
 
 export default NosenLanding;
+
+const GetStartedButton: React.FC = () => {
+  const { theme } = useTheme();
+  const { isConnected } = useAccount();
+  const { hasProfile, isLoading } = useProfile();
+  const router = useRouter();
+
+  if (isLoading) {
+    return (
+      <div className="px-8 py-4 rounded-xl font-semibold bg-slate-300 text-slate-600">
+        Loading...
+      </div>
+    );
+  }
+
+  if (hasProfile) {
+    return (
+      <div className="flex flex-col sm:flex-row gap-4">
+        <button
+          onClick={() => router.push('/dashboard')}
+          className={`px-8 py-4 rounded-xl font-semibold transition-all flex items-center gap-2 ${
+            theme === 'dark'
+              ? 'bg-green-600 hover:bg-green-700 text-white'
+              : 'bg-green-600 hover:bg-green-700 text-white'
+          }`}
+        >
+          <UserCheck className="w-5 h-5" />
+          Go to Dashboard
+        </button>
+        <button
+          onClick={() => router.push('/dashboard')}
+          className={`px-8 py-4 rounded-xl font-semibold transition-all flex items-center gap-2 border-2 ${
+            theme === 'dark'
+              ? 'border-slate-600 text-slate-300 hover:bg-slate-800'
+              : 'border-slate-300 text-slate-700 hover:bg-slate-50'
+          }`}
+        >
+          <Eye className="w-5 h-5" />
+          View Profile
+        </button>
+      </div>
+    );
+  }
+
+  if (isConnected) {
+    return (
+      <button
+        onClick={() => router.push('/create-profile')}
+        className={`px-8 py-4 rounded-xl font-semibold transition-all flex items-center gap-2 ${
+          theme === 'dark'
+            ? 'bg-green-600 hover:bg-green-700 text-white'
+            : 'bg-green-600 hover:bg-green-700 text-white'
+        }`}
+      >
+        <UserCheck className="w-5 h-5" />
+        Create Your ENS Profile
+      </button>
+    );
+  }
+
+  return (
+    <div className="text-center">
+      <ConnectWallet />
+      <p className="text-sm mt-2 opacity-75">
+        Connect your wallet to get started
+      </p>
+    </div>
+  );
+};

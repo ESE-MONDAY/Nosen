@@ -1,8 +1,9 @@
 'use client'
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Wallet, Sun, Moon } from 'lucide-react';
+import { Menu, X, Sun, Moon } from 'lucide-react';
 import Link from 'next/link';
 import { useTheme } from '../contexts/ThemeContext';
+import ConnectWallet from './ConnectWallet';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -51,10 +52,7 @@ const Navbar = () => {
               {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
             
-            <button className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-all transform hover:scale-105 flex items-center space-x-2">
-              <Wallet className="w-4 h-4" />
-              <span>Connect Wallet</span>
-            </button>
+            <ConnectWallet />
           </div>
 
           {/* Mobile menu button */}
@@ -89,10 +87,9 @@ const Navbar = () => {
             <a href="#ens-integration" className={`block ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>ENS Integration</a>
             <a href="#use-cases" className={`block ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>Use Cases</a>
             <a href="#pricing" className={`block ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>Pricing</a>
-            <button className="w-full bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center space-x-2">
-              <Wallet className="w-4 h-4" />
-              <span>Connect Wallet</span>
-            </button>
+            <div className="w-full">
+              <ConnectWallet />
+            </div>
           </div>
         </div>
       )}
