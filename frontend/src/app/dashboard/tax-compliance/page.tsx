@@ -35,6 +35,13 @@ const TaxCompliancePage = () => {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showGenerateReport, setShowGenerateReport] = useState(false);
+  const [reportForm, setReportForm] = useState({
+    jurisdiction: 'United States',
+    taxYear: '2024',
+    period: 'Q4',
+    includeNetworks: true,
+    includeSources: true
+  });
 
   // Mock tax compliance data - would come from API
   const taxReports = [
@@ -463,6 +470,170 @@ const TaxCompliancePage = () => {
           </div>
         </div>
       </div>
+
+      {/* Generate Report Modal */}
+      {showGenerateReport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-xl border ${
+            theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+          }`}>
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <h2 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                  Generate Tax Report
+                </h2>
+                <button
+                  onClick={() => setShowGenerateReport(false)}
+                  className={`p-2 rounded-lg transition-colors ${
+                    theme === 'dark' ? 'hover:bg-slate-700' : 'hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="sr-only">Close</span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                    Jurisdiction
+                  </label>
+                  <select
+                    value={reportForm.jurisdiction}
+                    onChange={(e) => setReportForm({...reportForm, jurisdiction: e.target.value})}
+                    className={`w-full px-3 py-2 border rounded-lg ${
+                      theme === 'dark' ? 'border-slate-600 bg-slate-700 text-white' : 'border-slate-300 bg-white text-slate-900'
+                    }`}
+                  >
+                    <option value="United States">United States</option>
+                    <option value="Germany">Germany</option>
+                    <option value="Singapore">Singapore</option>
+                    <option value="United Kingdom">United Kingdom</option>
+                    <option value="Canada">Canada</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                    Tax Year
+                  </label>
+                  <select
+                    value={reportForm.taxYear}
+                    onChange={(e) => setReportForm({...reportForm, taxYear: e.target.value})}
+                    className={`w-full px-3 py-2 border rounded-lg ${
+                      theme === 'dark' ? 'border-slate-600 bg-slate-700 text-white' : 'border-slate-300 bg-white text-slate-900'
+                    }`}
+                  >
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                    <option value="2022">2022</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                    Period
+                  </label>
+                  <select
+                    value={reportForm.period}
+                    onChange={(e) => setReportForm({...reportForm, period: e.target.value})}
+                    className={`w-full px-3 py-2 border rounded-lg ${
+                      theme === 'dark' ? 'border-slate-600 bg-slate-700 text-white' : 'border-slate-300 bg-white text-slate-900'
+                    }`}
+                  >
+                    <option value="Q1">Q1</option>
+                    <option value="Q2">Q2</option>
+                    <option value="Q3">Q3</option>
+                    <option value="Q4">Q4</option>
+                    <option value="Annual">Annual</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                    Report Type
+                  </label>
+                  <div className="space-y-2">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={reportForm.includeNetworks}
+                        onChange={(e) => setReportForm({...reportForm, includeNetworks: e.target.checked})}
+                        className="mr-2"
+                      />
+                      <span className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                        Include network breakdown
+                      </span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={reportForm.includeSources}
+                        onChange={(e) => setReportForm({...reportForm, includeSources: e.target.checked})}
+                        className="mr-2"
+                      />
+                      <span className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                        Include income sources
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className={`p-4 rounded-lg border ${
+                theme === 'dark' ? 'border-blue-600 bg-blue-900/30' : 'border-blue-300 bg-blue-50'
+              }`}>
+                <div className="flex items-center space-x-2 mb-2">
+                  <Calendar className="w-4 h-4 text-blue-500" />
+                  <span className={`text-sm font-medium ${
+                    theme === 'dark' ? 'text-blue-300' : 'text-blue-700'
+                  }`}>
+                    Report Summary
+                  </span>
+                </div>
+                <p className={`text-sm ${
+                  theme === 'dark' ? 'text-blue-300' : 'text-blue-700'
+                }`}>
+                  This will generate a {reportForm.period} {reportForm.taxYear} tax report for {reportForm.jurisdiction} 
+                  {reportForm.includeNetworks && ', including network breakdowns'} 
+                  {reportForm.includeSources && ', including income source details'}.
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end space-x-3">
+              <button
+                onClick={() => setShowGenerateReport(false)}
+                className={`px-4 py-2 border rounded-lg transition-colors ${
+                  theme === 'dark' 
+                    ? 'border-slate-600 text-slate-300 hover:bg-slate-700' 
+                    : 'border-slate-300 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // Here you would implement the actual report generation
+                  console.log('Generating report with:', reportForm);
+                  setShowGenerateReport(false);
+                  // Redirect to reports page or show success message
+                }}
+                className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+              >
+                Generate Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

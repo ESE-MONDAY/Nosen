@@ -606,6 +606,86 @@ const NosenDashboard = () => {
                 </div>
               </div>
 
+              {/* Generate Reports */}
+              <div className={`rounded-xl border ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                <div className={`p-6 border-b ${theme === 'dark' ? 'border-slate-700' : 'border-slate-200'}`}>
+                  <div className="flex items-center justify-between">
+                    <h3 className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Generate Reports</h3>
+                    <button 
+                      onClick={() => window.location.href = '/dashboard/reports'}
+                      className={`px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center text-sm font-medium`}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Generate New Report
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div 
+                      onClick={() => window.location.href = '/dashboard/documents'}
+                      className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                        theme === 'dark' ? 'border-slate-600 hover:bg-slate-700' : 'border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3 mb-2">
+                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <FileText className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <h4 className={`font-medium text-sm ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Income Verification</h4>
+                      </div>
+                      <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Generate documents for visas, loans, employment</p>
+                    </div>
+                    
+                    <div 
+                      onClick={() => window.location.href = '/dashboard/tax-compliance'}
+                      className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                        theme === 'dark' ? 'border-slate-600 hover:bg-slate-700' : 'border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3 mb-2">
+                        <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                          <Calendar className="w-4 h-4 text-green-600" />
+                        </div>
+                        <h4 className={`font-medium text-sm ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Tax Reports</h4>
+                      </div>
+                      <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Create tax compliance reports for multiple jurisdictions</p>
+                    </div>
+                    
+                    <div 
+                      onClick={() => window.location.href = '/dashboard/reports'}
+                      className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                        theme === 'dark' ? 'border-slate-600 hover:bg-slate-700' : 'border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3 mb-2">
+                        <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                          <TrendingUp className="w-4 h-4 text-purple-600" />
+                        </div>
+                        <h4 className={`font-medium text-sm ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Analytics Reports</h4>
+                      </div>
+                      <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>View income trends and comprehensive analytics</p>
+                    </div>
+                    
+                    <div 
+                      onClick={() => window.location.href = '/dashboard/employer-verification'}
+                      className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                        theme === 'dark' ? 'border-slate-600 hover:bg-slate-700' : 'border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3 mb-2">
+                        <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                          <Building className="w-4 h-4 text-orange-600" />
+                        </div>
+                        <h4 className={`font-medium text-sm ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Employer Reports</h4>
+                      </div>
+                      <p className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Generate employer verification documents</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Recent Documents */}
               <div className={`rounded-xl border ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
                 <div className={`p-6 border-b ${theme === 'dark' ? 'border-slate-700' : 'border-slate-200'}`}>
