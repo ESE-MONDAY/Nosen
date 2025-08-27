@@ -29,7 +29,7 @@ import {
   Menu
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
-import Sidebar from '../components/Sidebar';
+import SimpleSidebar from '../components/SimpeSidebar';
 
 const NosenDashboard = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('30d');
@@ -178,7 +178,7 @@ const NosenDashboard = () => {
   return (
     <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-900' : 'bg-slate-50'}`}>
       {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
+      <div className="lg:hidden fixed top-16 left-4 z-50">
         <button
           onClick={() => setSidebarOpen(true)}
           className={`p-2 rounded-lg transition-colors ${
@@ -192,12 +192,12 @@ const NosenDashboard = () => {
       </div>
 
       {/* Sidebar */}
-      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      <SimpleSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       {/* Main Content */}
-      <div className="lg:ml-64">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
-          {/* Welcome Section */}
+      <div className="lg:ml-64 pt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+                  {/* Welcome Section */}
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
@@ -545,6 +545,7 @@ const NosenDashboard = () => {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };
