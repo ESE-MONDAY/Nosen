@@ -1,226 +1,173 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-
-import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { 
-    User, 
     ArrowLeft, 
-    CheckCircle, 
     Loader2, 
-    AlertCircle, 
-    Check, 
-    Zap, 
-    Coins,
     Globe,
-    Building2,
-    FileText,
-    Star,
-    Link
+    PartyPopper,
+    ExternalLink
 } from 'lucide-react';
 import { ensService } from '../../services/ensService';
-import { nosenService } from '../../services/nosenService';
 import { useRouter } from 'next/navigation';
-import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
+import { useAccount } from 'wagmi';
 import { useTheme } from '../contexts/ThemeContext';
+import { ethers } from 'ethers';
 
 export default function CreateProfilePage() {
     const router = useRouter();
     const { address, isConnected } = useAccount();
-    const publicClient = usePublicClient();
-    const walletClient = useWalletClient();
     const { theme } = useTheme();
     
-    const [step, setStep] = useState(1);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
+    // Simple state management
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string>('');
+    const [userHasSubdomain, setUserHasSubdomain] = useState<boolean | null>(null);
     
-    // ENS Profile Data
-    const [ensProfile, setEnsProfile] = useState({
+    // Success modal state
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [registeredSubdomain, setRegisteredSubdomain] = useState<string>('');
+    const [transactionHash, setTransactionHash] = useState<string>('');
+    
+    // Form data - simplified to only what the smart contract needs
+    const [formData, setFormData] = useState({
         subdomain: '',
-        name: '',
-        role: '',
-        company: '',
-        bio: '',
-        avatar: '',
-        social: {
-            twitter: '',
-            linkedin: '',
-            github: '',
-            website: ''
-        }
+        duration: 365 * 24 * 60 * 60 // 1 year in seconds (default)
     });
     
-    // Nosen Platform Data
-    const [nosenProfile, setNosenProfile] = useState({
-        name: '',
-        role: '',
-        monthlyAmount: '',
-        token: 'ETH',
-        network: 'Lisk Sepolia',
-        isRecurring: true,
-        frequency: 'monthly',
-        bio: '',
-        skills: [] as string[],
-        experience: '',
-        education: '',
-        certifications: [] as string[]
+    // ENS state
+    const [ensState, setEnsState] = useState({
+        isL2Connected: true, // User is already on Lisk Sepolia
+        contractAccessible: true, // Assume accessible since on correct network
+        subdomainAvailable: null as boolean | null,
+        registrationFee: '0',
+        checking: false
     });
-    
-    // State variables
-    const [subdomainAvailable, setSubdomainAvailable] = useState<boolean | null>(null);
-    const [registrationFee, setRegistrationFee] = useState<string>('0');
-    const [isL2Enabled, setIsL2Enabled] = useState(false);
-    const [fees, setFees] = useState<{ incomeSourceFee: string; employerFee: string; documentFee: string } | null>(null);
 
+    // Check if user already has a subdomain
     useEffect(() => {
-        if (isConnected && address && publicClient && walletClient) {
-            initializeData();
-        }
-    }, [isConnected, address, publicClient, walletClient]);
+        const checkUserSubdomain = async () => {
+            if (address && isConnected) {
+                try {
+                    const existingSubdomain = await ensService.getUserSubdomain(address);
+                    setUserHasSubdomain(!!existingSubdomain);
+                } catch (error) {
+                    console.error('Error checking user subdomain:', error);
+                    setUserHasSubdomain(false);
+                }
+            }
+        };
 
-    const initializeData = async () => {
-        try {
-            // Initialize the Nosen service with RainbowKit providers
-            nosenService.initializeContract(publicClient, walletClient);
-            
-            await Promise.all([
-                checkL2Status(),
-                loadFees()
-            ]);
-        } catch (error) {
-            console.error('Error initializing data:', error);
-        }
-    };
+        checkUserSubdomain();
+    }, [address, isConnected]);
 
-    const checkL2Status = async () => {
-        try {
-            const l2Enabled = await ensService.isL2Enabled();
-            setIsL2Enabled(l2Enabled);
-        } catch (error) {
-            console.error('Error checking L2 status:', error);
-        }
-    };
-
-    const loadFees = async () => {
-        try {
-            const feeData = await nosenService.getFees();
-            setFees(feeData);
-        } catch (error) {
-            console.error('Error loading fees:', error);
+    const handleInputChange = (field: string, value: string | number) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+        
+        // Reset availability when subdomain changes
+        if (field === 'subdomain') {
+            setEnsState(prev => ({ ...prev, subdomainAvailable: null }));
         }
     };
 
     const checkSubdomainAvailability = async () => {
-        if (!ensProfile.subdomain) return;
-        
-        setIsLoading(true);
-        setError(null);
-        
+        if (!formData.subdomain || formData.subdomain.length < 3) {
+            setError('Subdomain must be at least 3 characters long');
+            return;
+        }
+
+        setEnsState(prev => ({ ...prev, checking: true }));
+        setError('');
+
         try {
-            // For now, let's simulate availability check since ENS service might not be fully integrated
-            // In a real implementation, this would call the ENS service
-            console.log('Checking subdomain availability for:', ensProfile.subdomain);
+            const result = await ensService.checkSubdomainAvailability(formData.subdomain);
             
-            // Simulate availability check - you can replace this with actual ENS service call
-            const isAvailable = ensProfile.subdomain.length >= 3 && !['admin', 'www', 'api', 'test'].includes(ensProfile.subdomain.toLowerCase());
-            
-            setSubdomainAvailable(isAvailable);
-            
-            if (isAvailable) {
-                setRegistrationFee('0.001'); // Simulated fee
+            if (result.error) {
+                setError(result.error);
+                setEnsState(prev => ({ ...prev, subdomainAvailable: false }));
+            } else {
+                setEnsState(prev => ({ 
+                    ...prev, 
+                    subdomainAvailable: result.available,
+                    registrationFee: result.price || '0.001'
+                }));
             }
-        } catch (error: any) {
-            console.error('Error checking subdomain:', error);
-            setError('Failed to check subdomain availability. Please try again.');
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to check subdomain availability';
+            setError(errorMessage);
+            setEnsState(prev => ({ ...prev, subdomainAvailable: false }));
         } finally {
-            setIsLoading(false);
+            setEnsState(prev => ({ ...prev, checking: false }));
         }
     };
 
-    const handleCreateENSProfile = async () => {
-        if (!ensProfile.subdomain || !ensProfile.name) return;
-        
-        setIsLoading(true);
-        setError(null);
-        
+    const handleCreateENSProfile = useCallback(async () => {
+        if (!formData.subdomain) {
+            setError('Subdomain is required');
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+
         try {
-            // For now, simulate ENS profile creation
-            // In a real implementation, this would call the ENS service
-            console.log('Creating ENS profile for:', ensProfile.subdomain);
+            // Check if user already has a registered subdomain
+            if (!address) {
+                throw new Error('Wallet address not available');
+            }
             
-            // Simulate success
-            setSuccess(`ENS Profile created successfully! Subdomain: ${ensProfile.subdomain}.nosen.eth`);
-            setStep(2);
-        } catch (error: any) {
-            setError(error.message);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+            const existingSubdomain = await ensService.getUserSubdomain(address);
+            if (existingSubdomain) {
+                throw new Error(`You already have a registered subdomain: ${existingSubdomain}.nosen.eth`);
+            }
 
-    const handleCreateNosenProfile = async () => {
-        if (!nosenProfile.name || !nosenProfile.role || !nosenProfile.monthlyAmount || !walletClient) return;
-        
-        setIsLoading(true);
-        setError(null);
-        
-        try {
-            // Create income source on Nosen platform
-            const result = await nosenService.addIncomeSource(
-                nosenProfile.name,
-                nosenProfile.role,
-                nosenProfile.monthlyAmount,
-                nosenProfile.token,
-                nosenProfile.network,
-                `${ensProfile.subdomain}.nosen.eth`, // Use ENS subdomain
-                nosenProfile.isRecurring,
-                nosenProfile.frequency,
-                '', // IPFS CID for now
-                walletClient
+            // Get registration fee and duration
+            const duration = formData.duration;
+            const fee = await ensService.getSubdomainRegistrationFee(formData.subdomain, duration);
+            
+            // Convert fee to wei
+            const feeInWei = ethers.parseEther(fee);
+            
+            // Register the subdomain on the smart contract
+            const result = await ensService.registerL2Subdomain(
+                formData.subdomain,
+                duration,
+                feeInWei
             );
             
             if (result.success) {
-                setSuccess(`Nosen Profile created successfully! Income Source ID: ${result.sourceId}`);
-                // Redirect to dashboard
-                setTimeout(() => {
-                    router.push('/dashboard');
-                }, 2000);
+                setRegisteredSubdomain(formData.subdomain);
+                setTransactionHash(result.txHash || '');
+                setShowSuccessModal(true);
             } else {
-                setError(result.error || 'Failed to create Nosen profile');
+                throw new Error(result.error || 'Failed to register subdomain');
             }
-        } catch (error: any) {
-            setError(error.message);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to create ENS profile';
+            setError(errorMessage);
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
-    };
+    }, [formData.subdomain, formData.duration, address]);
 
-    const handleNext = () => {
-        if (step === 1 && subdomainAvailable) {
-            setStep(2);
-        }
-    };
-
-    const handleBack = () => {
-        if (step === 2) {
-            setStep(1);
-        }
-    };
-
+    // Loading state
     if (!isConnected || !address) {
         return (
-            <div className={`flex items-center justify-center min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-900' : 'bg-slate-50'}`}>
+            <div className={`flex items-center justify-center min-h-screen ${theme === 'dark' ? 'bg-slate-900' : 'bg-slate-50'}`}>
                 <div className="text-center">
-                    <h2 className={`text-2xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Connect Your Wallet</h2>
-                    <p className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>Please connect your wallet to create your profile.</p>
+                    <Globe className="w-16 h-16 mx-auto mb-4 text-slate-400" />
+                    <h2 className={`text-2xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                        Connect Your Wallet
+                    </h2>
+                    <p className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                        Please connect your wallet to create your profile.
+                    </p>
                 </div>
             </div>
         );
@@ -228,489 +175,230 @@ export default function CreateProfilePage() {
 
     return (
         <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-900' : 'bg-slate-50'}`}>
-            <div className="container mx-auto p-6">
-                {/* Header */}
-                <div className="flex items-center mb-12">
-                    <Button variant="ghost" onClick={() => router.back()} className="mr-6">
-                        <ArrowLeft className="w-5 h-5 mr-2" />
-                        Back
-                    </Button>
-                    <div>
-                        <h1 className={`text-4xl font-bold mb-3 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Create Your Professional Profile</h1>
-                        <p className={`text-xl ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>Set up your ENS identity and Nosen platform profile</p>
-                    </div>
-                </div>
-
-                {/* Progress Steps */}
-                <div className="flex items-center justify-center mb-12">
-                    <div className="flex items-center space-x-8">
-                        <div className={`flex items-center ${step >= 1 ? 'text-emerald-600' : theme === 'dark' ? 'text-slate-400' : 'text-slate-400'}`}>
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 text-lg font-semibold ${step >= 1 ? 'border-emerald-600 bg-emerald-600 text-white' : theme === 'dark' ? 'border-slate-600' : 'border-slate-300'}`}>
-                                {step > 1 ? <Check className="w-6 h-6" /> : '1'}
-                            </div>
-                            <span className="ml-3 text-lg font-medium">ENS Profile</span>
-                        </div>
-                        <div className={`w-24 h-1 ${theme === 'dark' ? 'bg-slate-600' : 'bg-slate-300'}`}></div>
-                        <div className={`flex items-center ${step >= 2 ? 'text-emerald-600' : theme === 'dark' ? 'text-slate-400' : 'text-slate-400'}`}>
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 text-lg font-semibold ${step >= 2 ? 'border-emerald-600 bg-emerald-600 text-white' : theme === 'dark' ? 'border-slate-600' : 'border-slate-300'}`}>
-                                {step > 2 ? <Check className="w-6 h-6" /> : '2'}
-                            </div>
-                            <span className="ml-3 text-lg font-medium">Nosen Platform</span>
+            {/* Header */}
+            <div className="pt-24 px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl mx-auto">
+                    <div className="flex items-center justify-between mb-8">
+                        <Button variant="ghost" onClick={() => router.back()} className="mr-4">
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            Back
+                        </Button>
+                        <div>
+                            <h1 className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                                Register ENS Subdomain
+                            </h1>
+                            <p className={`text-lg mt-1 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                                Get your own .nosen.eth subdomain on Lisk Sepolia L2
+                            </p>
                         </div>
                     </div>
-                </div>
 
-                {/* Error/Success Messages */}
-                {error && (
-                    <div className="max-w-4xl mx-auto mb-8">
-                        <Alert variant="destructive">
-                            <AlertCircle className="h-5 w-5" />
-                            <AlertDescription className="text-lg">{error}</AlertDescription>
-                        </Alert>
+                    {/* Progress Indicator */}
+                    <div className="flex items-center justify-center mb-8">
+                        <div className="flex items-center">
+                            <div className="flex items-center text-emerald-600">
+                                <div className="w-8 h-8 rounded-full flex items-center justify-center border-2 font-semibold border-emerald-600 bg-emerald-600 text-white">
+                                    1
+                                </div>
+                                <span className="ml-2 font-medium">Register ENS Subdomain</span>
+                            </div>
+                        </div>
                     </div>
-                )}
-                
-                {success && (
-                    <div className="max-w-4xl mx-auto mb-8">
-                        <Alert variant="success">
-                            <CheckCircle className="h-5 w-5" />
-                            <AlertDescription className="text-lg">{success}</AlertDescription>
-                        </Alert>
-                    </div>
-                )}
 
-                {/* Step 1: ENS Profile */}
-                {step === 1 && (
-                    <div className="max-w-4xl mx-auto">
+                    {/* Error Messages */}
+                    {error && (
+                        <Alert className="border-red-200 bg-red-50 text-red-800">
+                            <div className="flex items-center">
+                                <div className="w-4 h-4 text-red-600 mr-2">⚠️</div>
+                                <AlertDescription>{error}</AlertDescription>
+                            </div>
+                        </Alert>
+                    )}
+
+                    {/* Step 1: ENS Profile */}
+                    {/* currentStep === 1 && ( */}
                         <Card className={`${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
                             <CardHeader className="text-center pb-8">
                                 <div className="w-16 h-16 mx-auto rounded-2xl bg-emerald-600/10 flex items-center justify-center mb-4">
                                     <Globe className="w-8 h-8 text-emerald-600" />
                                 </div>
-                                <CardTitle className="text-2xl">Step 1: Create Your ENS Identity</CardTitle>
+                                <CardTitle className="text-2xl">Register Your ENS Subdomain</CardTitle>
                                 <CardDescription className="text-lg">
-                                    Set up your professional ENS subdomain and profile information
+                                    Choose your subdomain and registration duration
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-8">
-                                {/* L2 Status */}
-                                <div className={`p-6 rounded-2xl ${theme === 'dark' ? 'bg-blue-900/30 border border-blue-700' : 'bg-blue-50 border border-blue-200'}`}>
-                                    <div className="flex items-center">
-                                        <div className="w-12 h-12 rounded-xl bg-blue-600/20 flex items-center justify-center mr-4">
-                                            <Zap className="w-6 h-6 text-blue-600" />
-                                        </div>
-                                        <div>
-                                            <h4 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-blue-300' : 'text-blue-900'}`}>L2 ENS Integration</h4>
-                                            <p className={`text-base ${theme === 'dark' ? 'text-blue-300' : 'text-blue-700'}`}>
-                                                {isL2Enabled 
-                                                    ? '✅ Using Lisk Sepolia L2 for cost-effective ENS management'
-                                                    : '⏳ Switching to Lisk Sepolia L2 for better performance'
-                                                }
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Subdomain Input */}
-                                <div className="space-y-4">
-                                    <Label htmlFor="subdomain" className="text-lg font-semibold">Choose Your Subdomain *</Label>
-                                    <div className="flex space-x-4">
-                                        <Input
-                                            id="subdomain"
-                                            value={ensProfile.subdomain}
-                                            onChange={(e) => setEnsProfile({...ensProfile, subdomain: e.target.value})}
-                                            placeholder="yourname"
-                                            className="flex-1 h-14 text-lg"
-                                        />
-                                        <Button 
-                                            onClick={checkSubdomainAvailability}
-                                            disabled={!ensProfile.subdomain || isLoading}
-                                            variant="outline"
-                                            size="lg"
-                                            className="px-8"
-                                        >
-                                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
-                                            Check
-                                        </Button>
-                                    </div>
-                                    <div className={`text-base ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                                        Your full ENS name will be: <span className="font-mono text-emerald-600 font-semibold text-lg">{ensProfile.subdomain}.nosen.eth</span>
-                                    </div>
-                                </div>
-
-                                {/* Availability Status */}
-                                {subdomainAvailable !== null && (
-                                    <div className={`p-6 rounded-2xl border-2 ${subdomainAvailable 
-                                        ? theme === 'dark' ? 'bg-green-900/30 border-green-700' : 'bg-green-50 border-green-200'
-                                        : theme === 'dark' ? 'bg-red-900/30 border-red-700' : 'bg-red-50 border-red-200'
-                                    }`}>
+                                {/* User Subdomain Status */}
+                                {userHasSubdomain && (
+                                    <div className={`p-6 rounded-2xl ${theme === 'dark' ? 'bg-blue-900/30 border border-blue-700' : 'bg-blue-50 border border-blue-200'}`}>
                                         <div className="flex items-center">
-                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center mr-4 ${
-                                                subdomainAvailable 
-                                                    ? 'bg-green-600/20' 
-                                                    : 'bg-red-600/20'
-                                            }`}>
-                                                {subdomainAvailable ? (
-                                                    <CheckCircle className="w-6 h-6 text-green-600" />
-                                                ) : (
-                                                    <AlertCircle className="w-6 h-6 text-red-600" />
-                                                )}
+                                            <div className="w-12 h-12 rounded-xl bg-blue-600/20 flex items-center justify-center mr-4">
+                                                <span className="text-2xl">✅</span>
                                             </div>
                                             <div>
-                                                <h4 className={`text-xl font-semibold mb-2 ${subdomainAvailable 
-                                                    ? theme === 'dark' ? 'text-green-300' : 'text-green-900'
-                                                    : theme === 'dark' ? 'text-red-300' : 'text-red-900'
-                                                }`}>
-                                                    {subdomainAvailable ? 'Subdomain Available!' : 'Subdomain Not Available'}
-                                                </h4>
-                                                <p className={`text-base ${subdomainAvailable 
-                                                    ? theme === 'dark' ? 'text-green-300' : 'text-green-700'
-                                                    : theme === 'dark' ? 'text-red-300' : 'text-red-700'
-                                                }`}>
-                                                    {subdomainAvailable 
-                                                        ? `Registration fee: ${registrationFee} ETH`
-                                                        : 'Please choose a different subdomain'
-                                                    }
+                                                <h4 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-blue-300' : 'text-blue-900'}`}>You Already Have a Subdomain!</h4>
+                                                <p className={`text-base ${theme === 'dark' ? 'text-blue-300' : 'text-blue-700'}`}>
+                                                    You have already registered a subdomain. You can only have one active subdomain per address.
                                                 </p>
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Profile Information */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <Label htmlFor="name" className="text-lg font-semibold">Full Name *</Label>
+                                {/* Subdomain Input */}
+                                <div className="space-y-3">
+                                    <Label htmlFor="subdomain" className="text-base font-semibold">
+                                        Choose Your Subdomain *
+                                    </Label>
+                                    <div className="flex space-x-3">
                                         <Input
-                                            id="name"
-                                            value={ensProfile.name}
-                                            onChange={(e) => setEnsProfile({...ensProfile, name: e.target.value})}
-                                            placeholder="John Doe"
-                                            className="h-14 text-lg mt-2"
+                                            id="subdomain"
+                                            value={formData.subdomain}
+                                            onChange={(e) => handleInputChange('subdomain', e.target.value)}
+                                            placeholder="yourname"
+                                            className="flex-1"
+                                            disabled={userHasSubdomain === true}
                                         />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="role" className="text-lg font-semibold">Professional Role *</Label>
-                                        <Input
-                                            id="role"
-                                            value={ensProfile.role}
-                                            onChange={(e) => setEnsProfile({...ensProfile, role: e.target.value})}
-                                            placeholder="Developer Relations"
-                                            className="h-14 text-lg mt-2"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="company" className="text-lg font-semibold">Company/Organization</Label>
-                                    <Input
-                                        id="company"
-                                        value={ensProfile.company}
-                                        onChange={(e) => setEnsProfile({...ensProfile, company: e.target.value})}
-                                        placeholder="Phala Network"
-                                        className="h-14 text-lg mt-2"
-                                    />
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="bio" className="text-lg font-semibold">Professional Bio</Label>
-                                    <Textarea
-                                        id="bio"
-                                        value={ensProfile.bio}
-                                        onChange={(e) => setEnsProfile({...ensProfile, bio: e.target.value})}
-                                        placeholder="Tell us about your professional background, skills, and experience..."
-                                        rows={5}
-                                        className="text-lg mt-2"
-                                    />
-                                </div>
-
-                                {/* Social Links */}
-                                <div className="space-y-6">
-                                    <Label className="text-lg font-semibold">Social Links</Label>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div>
-                                            <Label htmlFor="twitter" className="text-base">Twitter</Label>
-                                            <Input
-                                                id="twitter"
-                                                value={ensProfile.social.twitter}
-                                                onChange={(e) => setEnsProfile({
-                                                    ...ensProfile, 
-                                                    social: {...ensProfile.social, twitter: e.target.value}
-                                                })}
-                                                placeholder="@username"
-                                                className="h-12 mt-2"
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="linkedin" className="text-base">LinkedIn</Label>
-                                            <Input
-                                                id="linkedin"
-                                                value={ensProfile.social.linkedin}
-                                                onChange={(e) => setEnsProfile({
-                                                    ...ensProfile, 
-                                                    social: {...ensProfile.social, linkedin: e.target.value}
-                                                })}
-                                                placeholder="linkedin.com/in/username"
-                                                className="h-12 mt-2"
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="github" className="text-base">GitHub</Label>
-                                            <Input
-                                                id="github"
-                                                value={ensProfile.social.github}
-                                                onChange={(e) => setEnsProfile({
-                                                    ...ensProfile, 
-                                                    social: {...ensProfile.social, github: e.target.value}
-                                                })}
-                                                placeholder="github.com/username"
-                                                className="h-12 mt-2"
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="website" className="text-base">Website</Label>
-                                            <Input
-                                                id="website"
-                                                value={ensProfile.social.website}
-                                                onChange={(e) => setEnsProfile({
-                                                    ...ensProfile, 
-                                                    social: {...ensProfile.social, website: e.target.value}
-                                                })}
-                                                placeholder="yourwebsite.com"
-                                                className="h-12 mt-2"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Action Buttons */}
-                                <div className="flex justify-center pt-8">
-                                    <Button 
-                                        onClick={handleCreateENSProfile}
-                                        disabled={!subdomainAvailable || !ensProfile.name || !ensProfile.role || isLoading}
-                                        size="lg"
-                                        className="min-w-[200px] h-14 text-lg font-semibold"
-                                    >
-                                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
-                                        Create ENS Profile
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
-
-                {/* Step 2: Nosen Platform */}
-                {step === 2 && (
-                    <div className="max-w-4xl mx-auto">
-                        <Card className={`${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-                            <CardHeader className="text-center pb-8">
-                                <div className="w-16 h-16 mx-auto rounded-2xl bg-emerald-600/10 flex items-center justify-center mb-4">
-                                    <Building2 className="w-8 h-8 text-emerald-600" />
-                                </div>
-                                <CardTitle className="text-2xl">Step 2: Complete Your Nosen Profile</CardTitle>
-                                <CardDescription className="text-lg">
-                                    Add your professional details and income information to the Nosen platform
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-8">
-                                {/* Platform Info */}
-                                <div className={`p-6 rounded-2xl ${theme === 'dark' ? 'bg-emerald-900/30 border border-emerald-700' : 'bg-emerald-50 border border-emerald-200'}`}>
-                                    <div className="flex items-center">
-                                        <div className="w-12 h-12 rounded-xl bg-emerald-600/20 flex items-center justify-center mr-4">
-                                            <Star className="w-6 h-6 text-emerald-600" />
-                                        </div>
-                                        <div>
-                                            <h4 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-emerald-300' : 'text-emerald-900'}`}>Nosen Platform Integration</h4>
-                                            <p className={`text-base ${theme === 'dark' ? 'text-emerald-300' : 'text-emerald-700'}`}>
-                                                Your ENS profile will be automatically linked to your Nosen platform identity
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Basic Information */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <Label htmlFor="nosen-name" className="text-lg font-semibold">Full Name *</Label>
-                                        <Input
-                                            id="nosen-name"
-                                            value={nosenProfile.name}
-                                            onChange={(e) => setNosenProfile({...nosenProfile, name: e.target.value})}
-                                            placeholder="John Doe"
-                                            className="h-14 text-lg mt-2"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="nosen-role" className="text-lg font-semibold">Professional Role *</Label>
-                                        <Input
-                                            id="nosen-role"
-                                            value={nosenProfile.role}
-                                            onChange={(e) => setNosenProfile({...nosenProfile, role: e.target.value})}
-                                            placeholder="Developer Relations"
-                                            className="h-14 text-lg mt-2"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Income Information */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div>
-                                        <Label htmlFor="monthly-amount" className="text-lg font-semibold">Monthly Amount *</Label>
-                                        <Input
-                                            id="monthly-amount"
-                                            type="number"
-                                            value={nosenProfile.monthlyAmount}
-                                            onChange={(e) => setNosenProfile({...nosenProfile, monthlyAmount: e.target.value})}
-                                            placeholder="0.5"
-                                            className="h-14 text-lg mt-2"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="token" className="text-lg font-semibold">Token</Label>
-                                        <select
-                                            id="token"
-                                            value={nosenProfile.token}
-                                            onChange={(e) => setNosenProfile({...nosenProfile, token: e.target.value})}
-                                            className={`flex h-14 w-full rounded-xl border-2 px-4 py-3 text-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                                                theme === 'dark'
-                                                    ? "bg-slate-800 border-slate-600 text-white focus:border-emerald-500"
-                                                    : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"
-                                            }`}
+                                        <Button 
+                                            onClick={checkSubdomainAvailability}
+                                            disabled={!formData.subdomain || loading || userHasSubdomain === true}
+                                            variant="outline"
                                         >
-                                            <option value="ETH">ETH</option>
-                                            <option value="USDC">USDC</option>
-                                            <option value="USDT">USDT</option>
-                                            <option value="DAI">DAI</option>
-                                            <option value="MATIC">MATIC</option>
-                                        </select>
+                                            {loading ? (
+                                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                            ) : null}
+                                            {userHasSubdomain ? 'Already Registered' : 'Check'}
+                                        </Button>
                                     </div>
-                                    <div>
-                                        <Label htmlFor="network" className="text-lg font-semibold">Network</Label>
-                                        <select
-                                            id="network"
-                                            value={nosenProfile.network}
-                                            onChange={(e) => setNosenProfile({...nosenProfile, network: e.target.value})}
-                                            className={`flex h-14 w-full rounded-xl border-2 px-4 py-3 text-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                                                theme === 'dark'
-                                                    ? "bg-slate-800 border-slate-600 text-white focus:border-emerald-700"
-                                                    : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"
-                                            }`}
-                                        >
-                                            <option value="Lisk Sepolia">Lisk Sepolia</option>
-                                            <option value="Ethereum">Ethereum</option>
-                                            <option value="Polygon">Polygon</option>
-                                            <option value="Arbitrum">Arbitrum</option>
-                                            <option value="Optimism">Optimism</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                {/* Recurring Income */}
-                                <div className="space-y-4">
-                                    <div className="flex items-center space-x-3">
-                                        <input
-                                            type="checkbox"
-                                            id="is-recurring"
-                                            checked={nosenProfile.isRecurring}
-                                            onChange={(e) => setNosenProfile({...nosenProfile, isRecurring: e.target.checked})}
-                                            className="w-5 h-5 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
-                                        />
-                                        <Label htmlFor="is-recurring" className="text-lg font-semibold">This is recurring income</Label>
-                                    </div>
-                                    
-                                    {nosenProfile.isRecurring && (
-                                        <div>
-                                            <Label htmlFor="frequency" className="text-lg font-semibold">Frequency</Label>
-                                            <select
-                                                id="frequency"
-                                                value={nosenProfile.frequency}
-                                                onChange={(e) => setNosenProfile({...nosenProfile, frequency: e.target.value})}
-                                                className={`flex h-14 w-full rounded-xl border-2 px-4 py-3 text-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                                                    theme === 'dark'
-                                                        ? "bg-slate-800 border-slate-600 text-white focus:border-emerald-500"
-                                                        : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"
-                                                }`}
-                                            >
-                                                <option value="weekly">Weekly</option>
-                                                <option value="bi-weekly">Bi-weekly</option>
-                                                <option value="monthly">Monthly</option>
-                                                <option value="quarterly">Quarterly</option>
-                                                <option value="yearly">Yearly</option>
-                                            </select>
-                                        </div>
+                                    <p className="text-sm text-slate-600">
+                                        Your ENS name will be: <span className="font-mono text-emerald-600">
+                                            {formData.subdomain || 'yourname'}.nosen.eth
+                                        </span>
+                                    </p>
+                                    {userHasSubdomain && (
+                                        <p className="text-sm text-blue-600">
+                                            ⚠️ You already have a registered subdomain. You cannot create another one.
+                                        </p>
                                     )}
                                 </div>
 
-                                {/* Professional Bio */}
-                                <div>
-                                    <Label htmlFor="nosen-bio" className="text-lg font-semibold">Professional Bio</Label>
-                                    <Textarea
-                                        id="nosen-bio"
-                                        value={nosenProfile.bio}
-                                        onChange={(e) => setNosenProfile({...nosenProfile, bio: e.target.value})}
-                                        placeholder="Tell us about your professional background, skills, and experience..."
-                                        rows={5}
-                                        className="text-lg mt-2"
-                                    />
+                                {/* Duration Selection */}
+                                <div className="space-y-3">
+                                    <Label htmlFor="duration" className="text-base font-semibold">
+                                        Registration Duration
+                                    </Label>
+                                    <select
+                                        id="duration"
+                                        value={formData.duration}
+                                        onChange={(e) => handleInputChange('duration', parseInt(e.target.value))}
+                                        className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm ${
+                                            theme === 'dark' 
+                                                ? 'bg-slate-800 border-slate-600 text-white' 
+                                                : 'bg-white border-slate-300'
+                                        }`}
+                                        disabled={userHasSubdomain === true}
+                                    >
+                                        <option value={30 * 24 * 60 * 60}>30 days</option>
+                                        <option value={90 * 24 * 60 * 60}>90 days</option>
+                                        <option value={180 * 24 * 60 * 60}>6 months</option>
+                                        <option value={365 * 24 * 60 * 60}>1 year</option>
+                                        <option value={2 * 365 * 24 * 60 * 60}>2 years</option>
+                                    </select>
+                                    <p className="text-sm text-slate-600">
+                                        Choose how long you want to register your subdomain for
+                                    </p>
                                 </div>
 
-                                {/* Fees Information */}
-                                {fees && (
-                                    <div className={`p-6 rounded-2xl ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-100'}`}>
-                                        <h4 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Platform Fees</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-base">
-                                            <div className="text-center">
-                                                <div className={`w-16 h-16 mx-auto rounded-xl flex items-center justify-center mb-3 ${theme === 'dark' ? 'bg-emerald-900/30' : 'bg-emerald-100'}`}>
-                                                    <Coins className="w-8 h-8 text-emerald-600" />
-                                                </div>
-                                                <span className={theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}>Income Source:</span>
-                                                <div className="font-semibold text-emerald-600 text-lg">{fees.incomeSourceFee} ETH</div>
-                                            </div>
-                                            <div className="text-center">
-                                                <div className={`w-16 h-16 mx-auto rounded-xl flex items-center justify-center mb-3 ${theme === 'dark' ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
-                                                    <Building2 className="w-8 h-8 text-blue-600" />
-                                                </div>
-                                                <span className={theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}>Employer:</span>
-                                                <div className="font-semibold text-blue-600 text-lg">{fees.employerFee} ETH</div>
-                                            </div>
-                                            <div className="text-center">
-                                                <div className={`w-16 h-16 mx-auto rounded-xl flex items-center justify-center mb-3 ${theme === 'dark' ? 'bg-purple-900/30' : 'bg-purple-100'}`}>
-                                                    <FileText className="w-8 h-8 text-purple-600" />
-                                                </div>
-                                                <span className={theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}>Document:</span>
-                                                <div className="font-semibold text-purple-600 text-lg">{fees.documentFee} ETH</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
                                 {/* Action Buttons */}
-                                <div className="flex justify-between space-x-6 pt-8">
+                                <div className="flex justify-center pt-6">
                                     <Button 
-                                        variant="outline"
-                                        onClick={handleBack}
+                                        onClick={handleCreateENSProfile}
+                                        disabled={!formData.subdomain || loading || userHasSubdomain === true}
                                         size="lg"
-                                        className="min-w-[160px] h-14 text-lg font-semibold"
+                                        className="min-w-[200px]"
                                     >
-                                        <ArrowLeft className="w-5 h-5 mr-2" />
-                                        Back
-                                    </Button>
-                                    <Button 
-                                        onClick={handleCreateNosenProfile}
-                                        disabled={!nosenProfile.name || !nosenProfile.role || !nosenProfile.monthlyAmount || isLoading}
-                                        size="lg"
-                                        className="min-w-[200px] h-14 text-lg font-semibold"
-                                    >
-                                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
-                                        Create Profile
+                                        {loading ? (
+                                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                        ) : null}
+                                        {userHasSubdomain ? 'Already Registered' : 'Register Subdomain'}
                                     </Button>
                                 </div>
                             </CardContent>
                         </Card>
-                    </div>
-                )}
+                    {/* ) */}
+                </div>
             </div>
+
+            {/* Success Modal */}
+            <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+                <DialogContent className="sm:max-w-[500px] text-center">
+                    <DialogHeader className="text-center">
+                        <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
+                            <PartyPopper className="w-8 h-8 text-emerald-600" />
+                        </div>
+                        <DialogTitle className="text-2xl text-emerald-600">
+                            🎉 Congratulations!
+                        </DialogTitle>
+                        <DialogDescription className="text-lg mt-2">
+                            Your ENS subdomain has been successfully registered!
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="space-y-4">
+                        {/* ENS Name Display */}
+                        <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+                            <div className="text-sm text-emerald-700 mb-1">Your New ENS Name:</div>
+                            <div className="text-2xl font-mono font-bold text-emerald-800">
+                                {registeredSubdomain}.nosen.eth
+                            </div>
+                        </div>
+                        
+                        {/* Transaction Details */}
+                        {transactionHash && (
+                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                <div className="text-sm text-slate-700 mb-2">Transaction Hash:</div>
+                                <div className="font-mono text-sm text-slate-800 break-all">
+                                    {transactionHash}
+                                </div>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="mt-2"
+                                    onClick={() => {
+                                        const explorerUrl = `https://sepolia.lisk.com/tx/${transactionHash}`;
+                                        window.open(explorerUrl, '_blank');
+                                    }}
+                                >
+                                    <ExternalLink className="w-4 h-4 mr-2" />
+                                    View on Explorer
+                                </Button>
+                            </div>
+                        )}
+                        
+                        {/* Next Steps */}
+                        <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
+                            <div className="text-sm font-semibold text-blue-800 mb-2">What&apos;s Next?</div>
+                            <div className="text-sm text-blue-700 space-y-1">
+                                <div>• Your subdomain is now active on Lisk Sepolia L2</div>
+                                <div>• You can use it for your Web3 identity</div>
+                                <div>• Manage it from your dashboard</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="flex justify-center pt-4">
+                        <Button 
+                            onClick={() => {
+                                setShowSuccessModal(false);
+                                router.push('/dashboard');
+                            }}
+                            className="px-8"
+                        >
+                            Go to Dashboard
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

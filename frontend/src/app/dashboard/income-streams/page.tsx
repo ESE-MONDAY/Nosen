@@ -344,12 +344,6 @@ export default function IncomeStreamsPage() {
                                 <div className="text-2xl font-bold text-purple-600">{userReputation.verificationsReceived}</div>
                                 <div className="text-sm text-gray-600">Verifications Received</div>
                             </div>
-                            <div className="text-center">
-                                <div className="text-2xl font-bold text-orange-600">
-                                    {new Date(userReputation.lastActivity * 1000).toLocaleDateString()}
-                                </div>
-                                <div className="text-sm text-gray-600">Last Activity</div>
-                            </div>
                         </div>
                     </CardContent>
                 </Card>

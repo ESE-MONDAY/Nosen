@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import SimpleSidebar from '../components/SimpeSidebar';
 import { 
     TrendingUp, 
     Building2, 
@@ -17,7 +18,8 @@ import {
     Award,
     Zap,
     Shield,
-    Link
+    Link,
+    Menu
 } from 'lucide-react';
 import { nosenService, ContractStats, IncomeSourceStats, DocumentStats } from '../../services/nosenService';
 import { ensService } from '../../services/ensService';
@@ -43,6 +45,7 @@ export default function DashboardPage() {
     });
     const [isL2Enabled, setIsL2Enabled] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     useEffect(() => {
         if (isConnected && address && publicClient && walletClient) {
@@ -126,7 +129,29 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className={`container mx-auto p-6 space-y-6 transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-900' : 'bg-slate-50'}`}>
+        <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-900' : 'bg-slate-50'}`}>
+            {/* Sidebar */}
+            <SimpleSidebar 
+                sidebarOpen={isSidebarOpen} 
+                setSidebarOpen={setIsSidebarOpen} 
+            />
+            
+            {/* Main Content */}
+            <div className={`transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+                {/* Mobile Sidebar Toggle */}
+                <div className="lg:hidden fixed top-20 left-4 z-50">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                        className={`${theme === 'dark' ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-300'}`}
+                    >
+                        <Menu className="w-4 h-4" />
+                    </Button>
+                </div>
+
+                {/* Dashboard Content */}
+                <div className="pt-24 p-6">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -503,6 +528,8 @@ export default function DashboardPage() {
                     </div>
                 </CardContent>
             </Card>
+        </div>
+            </div>
         </div>
     );
 }

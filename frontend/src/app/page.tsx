@@ -107,7 +107,8 @@ const NosenLanding = () => {
 
     if (isLoading) {
       return (
-        <div className="px-8 py-4 rounded-xl font-semibold bg-slate-300 text-slate-600">
+        <div className="px-8 py-4 rounded-xl font-semibold transition-all flex items-center gap-2 bg-slate-400 text-white">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
           Loading...
         </div>
       );
@@ -115,30 +116,17 @@ const NosenLanding = () => {
 
     if (hasProfile) {
       return (
-        <div className="flex flex-col sm:flex-row gap-4">
-          <button
-            onClick={() => router.push('/dashboard')}
-            className={`px-8 py-4 rounded-xl font-semibold transition-all flex items-center gap-2 ${
-              theme === 'dark'
-                ? 'bg-green-600 hover:bg-green-700 text-white'
-                : 'bg-green-600 hover:bg-green-700 text-white'
-            }`}
-          >
-            <UserCheck className="w-5 h-5" />
-            Go to Dashboard
-          </button>
-          <button
-            onClick={() => router.push('/dashboard')}
-            className={`px-8 py-4 rounded-xl font-semibold transition-all flex items-center gap-2 border-2 ${
-              theme === 'dark'
-                ? 'border-slate-600 text-slate-300 hover:bg-slate-800'
-                : 'border-slate-300 text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            <Eye className="w-5 h-5" />
-            View Profile
-          </button>
-        </div>
+        <button
+          onClick={() => router.push('/dashboard')}
+          className={`px-8 py-4 rounded-xl font-semibold transition-all flex items-center gap-2 ${
+            theme === 'dark'
+              ? 'bg-blue-600 hover:bg-blue-700 text-white'
+              : 'bg-blue-600 hover:bg-blue-700 text-white'
+          }`}
+        >
+          <UserCheck className="w-5 h-5" />
+          Go to Dashboard
+        </button>
       );
     }
 

@@ -137,7 +137,6 @@ export interface UserReputation {
     reputationScore: number;
     verificationsGiven: number;
     verificationsReceived: number;
-    lastActivity: number;
 }
 
 export interface VerificationProgress {
