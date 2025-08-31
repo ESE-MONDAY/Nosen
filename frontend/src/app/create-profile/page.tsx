@@ -18,12 +18,14 @@ import { ensService } from '../../services/ensService';
 import { useRouter } from 'next/navigation';
 import { useAccount } from 'wagmi';
 import { useTheme } from '../contexts/ThemeContext';
+import { useProfile } from '../contexts/ProfileContext';
 import { ethers } from 'ethers';
 
 export default function CreateProfilePage() {
     const router = useRouter();
     const { address, isConnected } = useAccount();
     const { theme } = useTheme();
+    const { refreshProfile } = useProfile();
     
     // Simple state management
     const [loading, setLoading] = useState(false);
@@ -142,6 +144,19 @@ export default function CreateProfilePage() {
             );
             
             if (result.success) {
+                // Store profile information in localStorage
+                const profileData = {
+                    ensName: `${formData.subdomain}.nosen.eth`,
+                    displayName: formData.subdomain,
+                    bio: '',
+                    isVerified: true,
+                    createdAt: new Date().toISOString(),
+                };
+                localStorage.setItem(`profile_${address}`, JSON.stringify(profileData));
+                
+                // Refresh the profile context
+                await refreshProfile();
+                
                 setRegisteredSubdomain(formData.subdomain);
                 setTransactionHash(result.txHash || '');
                 setShowSuccessModal(true);
@@ -154,7 +169,7 @@ export default function CreateProfilePage() {
         } finally {
             setLoading(false);
         }
-    }, [formData.subdomain, formData.duration, address]);
+    }, [formData.subdomain, formData.duration, address, refreshProfile]);
 
     // Loading state
     if (!isConnected || !address) {
@@ -179,10 +194,32 @@ export default function CreateProfilePage() {
             <div className="pt-24 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-7xl mx-auto">
                     <div className="flex items-center justify-between mb-8">
-                        <Button variant="ghost" onClick={() => router.back()} className="mr-4">
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            Back
-                        </Button>
+                        <div className="flex items-center space-x-4">
+                            <Button variant="ghost" onClick={() => router.back()} className="mr-4">
+                                <ArrowLeft className="w-4 h-4 mr-2" />
+                                Back
+                            </Button>
+                            <Button 
+                                variant="outline" 
+                                onClick={async () => {
+                                    if (address) {
+                                        try {
+                                            const existingSubdomain = await ensService.getUserSubdomain(address);
+                                            setUserHasSubdomain(!!existingSubdomain);
+                                            if (existingSubdomain) {
+                                                await refreshProfile();
+                                            }
+                                        } catch (error) {
+                                            console.error('Error refreshing subdomain status:', error);
+                                        }
+                                    }
+                                }}
+                                className="flex items-center gap-2"
+                            >
+                                <div className="w-4 h-4">🔄</div>
+                                Refresh Status
+                            </Button>
+                        </div>
                         <div>
                             <h1 className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                                 Register ENS Subdomain

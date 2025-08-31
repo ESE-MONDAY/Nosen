@@ -251,27 +251,51 @@ export class ENSService {
             console.log('ENS Service: Getting user subdomain for owner:', owner);
             
             if (!this.l2Provider) {
-                throw new Error('L2 provider not initialized');
+                console.log('ENS Service: L2 provider not initialized, trying to initialize...');
+                await this.initializeProvider();
+                
+                if (!this.l2Provider) {
+                    console.log('ENS Service: Still no L2 provider after initialization attempt');
+                    return null;
+                }
             }
 
-            const network = await this.l2Provider.getNetwork();
-            if (network.chainId !== BigInt(4202)) {
-                throw new Error('Must be connected to Lisk Sepolia L2 network');
+            try {
+                const network = await this.l2Provider.getNetwork();
+                console.log('ENS Service: Current network chain ID:', network.chainId.toString());
+                
+                if (network.chainId !== BigInt(4202)) {
+                    console.log('ENS Service: Not on Lisk Sepolia L2 network, current chain ID:', network.chainId.toString());
+                    // Don't throw error, just return null to allow fallback
+                    return null;
+                }
+            } catch (networkError) {
+                console.log('ENS Service: Error getting network info:', networkError);
+                // Don't throw error, just return null to allow fallback
+                return null;
             }
 
-            const { L2ENSRegistrarContract } = await import('../app/abi');
-            const contract = new ethers.Contract(
-                L2ENSRegistrarContract.address,
-                L2_ENS_REGISTRAR_ABI,
-                this.l2Provider
-            );
+            try {
+                const { L2ENSRegistrarContract } = await import('../app/abi');
+                console.log('ENS Service: L2ENSRegistrarContract address:', L2ENSRegistrarContract.address);
+                
+                const contract = new ethers.Contract(
+                    L2ENSRegistrarContract.address,
+                    L2_ENS_REGISTRAR_ABI,
+                    this.l2Provider
+                );
 
-            // Get all subdomains owned by this address
-            const subdomains = await contract.getOwnerSubdomains(owner);
-            console.log('ENS Service: User subdomains:', subdomains);
+                console.log('ENS Service: Calling getOwnerSubdomains...');
+                // Get all subdomains owned by this address
+                const subdomains = await contract.getOwnerSubdomains(owner);
+                console.log('ENS Service: User subdomains:', subdomains);
 
-            // Return the first subdomain if any exist
-            return subdomains.length > 0 ? subdomains[0] : null;
+                // Return the first subdomain if any exist
+                return subdomains.length > 0 ? subdomains[0] : null;
+            } catch (contractError) {
+                console.log('ENS Service: Contract call failed:', contractError);
+                return null;
+            }
         } catch (error: any) {
             console.error('ENS Service: Error getting user subdomain:', error);
             return null;

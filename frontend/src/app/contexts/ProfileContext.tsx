@@ -44,9 +44,11 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
 
   // Check if user has a profile on mount and when wallet changes
   useEffect(() => {
+    console.log('ProfileContext: useEffect triggered, isConnected:', isConnected, 'address:', address);
     if (isConnected && address) {
       checkProfile();
     } else {
+      console.log('ProfileContext: Not connected or no address, setting profile to null');
       setProfile(null);
       setIsLoading(false);
     }
@@ -61,42 +63,51 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
         return;
       }
 
+      console.log('ProfileContext: Checking profile for address:', address);
+
       // Check if user already has an ENS subdomain on the blockchain
-      const existingSubdomain = await ensService.getUserSubdomain(address);
-      
-      if (existingSubdomain) {
-        // User has an ENS subdomain, create profile object
-        const ensProfile: ENSProfile = {
-          ensName: `${existingSubdomain}.nosen.eth`,
-          displayName: existingSubdomain,
-          bio: '',
-          isVerified: true,
-          createdAt: new Date().toISOString(),
-        };
-        setProfile(ensProfile);
-      } else {
-        // Check localStorage as fallback for legacy profiles
-        const savedProfile = localStorage.getItem(`profile_${address}`);
-        if (savedProfile) {
-          setProfile(JSON.parse(savedProfile));
-        } else {
-          setProfile(null);
+      try {
+        console.log('ProfileContext: Attempting to get user subdomain from blockchain...');
+        const existingSubdomain = await ensService.getUserSubdomain(address);
+        console.log('ProfileContext: Blockchain result:', existingSubdomain);
+        
+        if (existingSubdomain) {
+          // User has an ENS subdomain, create profile object
+          const ensProfile: ENSProfile = {
+            ensName: `${existingSubdomain}.nosen.eth`,
+            displayName: existingSubdomain,
+            bio: '',
+            isVerified: true,
+            createdAt: new Date().toISOString(),
+          };
+          console.log('ProfileContext: Setting profile from blockchain:', ensProfile);
+          setProfile(ensProfile);
+          setIsLoading(false);
+          return;
         }
+      } catch (blockchainError) {
+        console.error('ProfileContext: Blockchain check failed:', blockchainError);
+        console.log('ProfileContext: Falling back to localStorage check...');
       }
-    } catch (error) {
-      console.error('Error checking profile:', error);
-      // Fallback to localStorage check
+
+      // Check localStorage as fallback for legacy profiles or if blockchain check fails
       try {
         const savedProfile = localStorage.getItem(`profile_${address}`);
         if (savedProfile) {
-          setProfile(JSON.parse(savedProfile));
+          const parsedProfile = JSON.parse(savedProfile);
+          console.log('ProfileContext: Setting profile from localStorage:', parsedProfile);
+          setProfile(parsedProfile);
         } else {
+          console.log('ProfileContext: No profile found in localStorage');
           setProfile(null);
         }
-      } catch (fallbackError) {
-        console.error('Fallback profile check failed:', fallbackError);
+      } catch (localStorageError) {
+        console.error('ProfileContext: localStorage check failed:', localStorageError);
         setProfile(null);
       }
+    } catch (error) {
+      console.error('ProfileContext: Error in checkProfile:', error);
+      setProfile(null);
     } finally {
       setIsLoading(false);
     }
