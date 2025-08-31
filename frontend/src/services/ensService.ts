@@ -1,470 +1,556 @@
 import { ethers } from 'ethers';
-import { getCurrentNetwork, IPFS_CONFIG, ENS_CONFIG } from '../config/networks';
+import { NETWORKS, ENS_CONFIG } from '../config/networks';
 
-// ENS Registry ABI (simplified for the functions we need)
-const ENS_REGISTRY_ABI = [
-  'function owner(bytes32 node) external view returns (address)',
-  'function setSubnodeRecord(bytes32 node, bytes32 label, address owner, address resolver, uint64 ttl) external',
-  'function setResolver(bytes32 node, address resolver) external'
+// L2 ENS Registrar ABI (from your deployed contract)
+const L2_ENS_REGISTRAR_ABI = [
+    'function registerSubdomain(string calldata subdomain, address owner, uint256 duration) external payable',
+    'function renewSubdomain(string calldata subdomain, uint256 duration) external payable',
+    'function transferSubdomain(string calldata subdomain, address to) external',
+    'function getSubdomainInfo(string calldata subdomain) external view returns (address owner, uint256 expiry, bool exists)',
+    'function isSubdomainAvailable(string calldata subdomain) external view returns (bool)',
+    'function getRegistrationFee(string calldata subdomain, uint256 duration) external view returns (uint256)',
+    'function getFullENSName(string calldata subdomain) external view returns (string)',
+    'function getOwnerSubdomains(address owner) external view returns (string[] memory)',
+    'function supportsCCIPRead() external view returns (bool)',
+    'function baseRegistrationFee() external view returns (uint256)',
+    'function parentDomain() external view returns (string)',
+    'function minRegistrationDuration() external view returns (uint256)',
+    'function maxRegistrationDuration() external view returns (uint256)'
 ];
 
-// Public Resolver ABI (simplified)
+// Public Resolver ABI for L1 ENS
 const PUBLIC_RESOLVER_ABI = [
-  'function setContenthash(bytes32 node, bytes calldata hash) external',
-  'function setText(bytes32 node, string calldata key, string calldata value) external',
-  'function setAddr(bytes32 node, address addr) external',
-  'function contenthash(bytes32 node) external view returns (bytes memory)'
+    'function setText(bytes32 node, string calldata key, string calldata value) external',
+    'function setContenthash(bytes32 node, bytes calldata hash) external',
+    'function text(bytes32 node, string calldata key) external view returns (string memory)',
+    'function contenthash(bytes32 node) external view returns (bytes memory)',
+    'function resolve(bytes calldata name, bytes calldata data) external view returns (bytes memory)',
+    'function resolveWithProof(bytes calldata name, bytes calldata data) external view returns (bytes memory, bytes memory)'
 ];
 
-export interface ENSProfile {
-  ensName: string;
-  displayName: string;
-  bio: string;
-  avatar?: string;
-  website?: string;
-  twitter?: string;
-  github?: string;
-  isVerified: boolean;
-  createdAt: string;
-  ipfsHash?: string;
+// ENS Registry ABI
+const ENS_REGISTRY_ABI = [
+    'function setSubnodeRecord(bytes32 parent, bytes32 label, address owner, address resolver, uint64 ttl) external',
+    'function setResolver(bytes32 node, address resolver) external',
+    'function owner(bytes32 node) external view returns (address)',
+    'function resolver(bytes32 node) external view returns (address)',
+    'function ttl(bytes32 node) external view returns (uint64)'
+];
+
+interface CCIPResponse {
+    data: string;
+    signature: string;
+    timestamp: number;
 }
 
 export class ENSService {
-  private provider: ethers.BrowserProvider | null = null;
-  private signer: ethers.Signer | null = null;
-  private network: ReturnType<typeof getCurrentNetwork>;
+    private provider: ethers.BrowserProvider | null = null;
+    private signer: ethers.Signer | null = null;
+    private network: any = null;
+    private l2Provider: ethers.BrowserProvider | null = null;
+    private l2Signer: ethers.Signer | null = null;
 
-  constructor() {
-    this.network = getCurrentNetwork();
-    this.initializeProvider();
-  }
-
-  private async initializeProvider() {
-    if (typeof window !== 'undefined' && window.ethereum) {
-      try {
-        this.provider = new ethers.BrowserProvider(window.ethereum);
-        this.signer = await this.provider.getSigner();
-        
-        // Check if we're on the correct network
-        const network = await this.provider.getNetwork();
-        if (network.chainId !== BigInt(this.network.chainId)) {
-          console.warn(`Expected chain ID ${this.network.chainId}, got ${network.chainId}`);
-        }
-      } catch (error) {
-        console.error('Failed to initialize provider:', error);
-      }
+    constructor() {
+        this.initializeProvider();
     }
-  }
 
-  /**
-   * Switch to the correct network
-   */
-  async switchNetwork(): Promise<boolean> {
-    try {
-      if (typeof window !== 'undefined' && window.ethereum) {
-        await window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: `0x${this.network.chainId.toString(16)}` }],
-        });
-        return true;
-      }
-      return false;
-    } catch (error: unknown) {
-      if (error && typeof error === 'object' && 'code' in error && error.code === 4902) {
-        // Chain not added, try to add it
+    private async initializeProvider() {
+        if (typeof window !== 'undefined' && window.ethereum) {
+            try {
+                this.provider = new ethers.BrowserProvider(window.ethereum);
+                this.signer = await this.provider.getSigner();
+                this.network = await this.provider.getNetwork();
+                
+                // Initialize L2 provider for Lisk Sepolia
+                this.l2Provider = new ethers.BrowserProvider(window.ethereum);
+                this.l2Signer = await this.l2Provider.getSigner();
+                
+                // Listen for account changes
+                window.ethereum.on('accountsChanged', () => {
+                    this.initializeProvider();
+                });
+                
+                // Listen for chain changes
+                window.ethereum.on('chainChanged', () => {
+                    this.initializeProvider();
+                });
+            } catch (error) {
+                console.error('Failed to initialize provider:', error);
+            }
+        }
+    }
+
+    async switchNetwork(targetChainId?: number): Promise<boolean> {
+        if (!this.provider || !window.ethereum) {
+            throw new Error('No provider available');
+        }
+
         try {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: `0x${this.network.chainId.toString(16)}`,
-              chainName: this.network.name,
-              nativeCurrency: this.network.nativeCurrency,
-              rpcUrls: [this.network.rpcUrl],
-              blockExplorerUrls: [this.network.blockExplorer],
-            }],
-          });
-          return true;
-        } catch (addError) {
-          console.error('Failed to add network:', addError);
-          return false;
+            const currentChainId = await this.provider.send('eth_chainId', []);
+            const targetId = targetChainId || this.network.chainId;
+            
+            if (currentChainId === `0x${targetId.toString(16)}`) {
+                return true; // Already on target network
+            }
+
+            await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: `0x${targetId.toString(16)}` }],
+            });
+
+            // Refresh provider after switch
+            await this.initializeProvider();
+            return true;
+        } catch (switchError: any) {
+            // If the network doesn't exist, add it
+            if (switchError.code === 4902) {
+                try {
+                    const { NETWORKS } = await import('../config/networks');
+                    const chainIdToAdd = targetChainId || this.network.chainId;
+                    const networkConfig = Object.values(NETWORKS).find((n: any) => n.chainId === chainIdToAdd);
+                    
+                    if (networkConfig) {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: `0x${chainIdToAdd.toString(16)}`,
+                                chainName: networkConfig.name,
+                                nativeCurrency: networkConfig.nativeCurrency,
+                                rpcUrls: networkConfig.rpcUrls,
+                                blockExplorerUrls: networkConfig.blockExplorerUrls ? [networkConfig.blockExplorerUrls] : []
+                            }],
+                        });
+                        
+                        await this.initializeProvider();
+                        return true;
+                    }
+                } catch (addError) {
+                    console.error('Failed to add network:', addError);
+                    throw new Error('Failed to add network');
+                }
+            }
+            throw switchError;
         }
-      }
-      console.error('Failed to switch network:', error);
-      return false;
     }
-  }
 
-  /**
-   * Check if a subdomain is available
-   */
-  async checkSubdomainAvailability(subdomain: string): Promise<boolean> {
-    try {
-      if (!this.provider) {
-        throw new Error('Provider not initialized');
-      }
+    async checkSubdomainAvailability(subdomain: string): Promise<{ available: boolean; price?: string; error?: string }> {
+        try {
+            if (!this.l2Provider || !this.l2Signer) {
+                throw new Error('L2 provider not initialized');
+            }
 
-      const ensRegistry = new ethers.Contract(
-        this.network.ensRegistry,
-        ENS_REGISTRY_ABI,
-        this.provider
-      );
+            // Check if we're on L2 network
+            const network = await this.l2Provider.getNetwork();
+            const isL2 = network.chainId === 4202n; // Lisk Sepolia
 
-      const nodeHash = ethers.namehash(`${subdomain}.${ENS_CONFIG.parentDomain}`);
-      const owner = await ensRegistry.owner(nodeHash);
+            if (isL2) {
+                // Use L2 ENS Registrar
+                const { L2ENSRegistrarContract } = await import('../app/abi');
+                const contract = new ethers.Contract(
+                    L2ENSRegistrarContract.address,
+                    L2_ENS_REGISTRAR_ABI,
+                    this.l2Signer
+                );
 
-      // If owner is zero address, subdomain is available
-      return owner === ethers.ZeroAddress;
-    } catch (error) {
-      console.error('Error checking subdomain availability:', error);
-      throw new Error('Failed to check subdomain availability');
-    }
-  }
-
-  /**
-   * Upload profile metadata to IPFS using HTTP gateway
-   */
-  async uploadToIPFS(profile: ENSProfile): Promise<string> {
-    try {
-      // Remove sensitive fields before uploading
-      const uploadData = {
-        name: profile.displayName,
-        description: profile.bio,
-        avatar: profile.avatar,
-        website: profile.website,
-        twitter: profile.twitter,
-        github: profile.github,
-        created_at: profile.createdAt,
-        version: '1.0.0'
-      };
-
-      const data = JSON.stringify(uploadData);
-      
-      // For now, we'll simulate IPFS upload by creating a hash
-      // In production, you'd use a real IPFS service like:
-      // - Pinata API
-      // - Infura IPFS API
-      // - Web3.Storage API
-      // - Or your own IPFS node
-      
-      // Simulate IPFS hash (this would be the actual IPFS CID in production)
-      const hash = this.generateMockIPFSHash(data);
-      console.log('Profile data prepared for IPFS:', uploadData);
-      console.log('Mock IPFS hash generated:', hash);
-      
-      return hash;
-    } catch (error) {
-      console.error('Error preparing profile for IPFS:', error);
-      throw new Error('Failed to prepare profile for IPFS');
-    }
-  }
-
-  /**
-   * Generate a mock IPFS hash for development
-   * In production, this would be replaced with actual IPFS upload
-   */
-  private generateMockIPFSHash(data: string): string {
-    // Create a simple hash from the data
-    const encoder = new TextEncoder();
-    const dataBuffer = encoder.encode(data);
-    
-    // Simple hash function (not cryptographically secure, just for demo)
-    let hash = 0;
-    for (let i = 0; i < dataBuffer.length; i++) {
-      const char = dataBuffer[i];
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    
-    // Convert to base58-like string (simulating IPFS CID)
-    const hashHex = Math.abs(hash).toString(16);
-    return `Qm${hashHex.padStart(44, '0')}`;
-  }
-
-  /**
-   * Create ENS subdomain and set profile data
-   */
-  async createENSProfile(subdomain: string, profile: ENSProfile): Promise<string> {
-    try {
-      if (!this.signer) {
-        throw new Error('Signer not initialized');
-      }
-
-      // Ensure we're on the correct network
-      const isCorrectNetwork = await this.switchNetwork();
-      if (!isCorrectNetwork) {
-        throw new Error('Failed to switch to correct network');
-      }
-
-      // Check availability first
-      const isAvailable = await this.checkSubdomainAvailability(subdomain);
-      if (!isAvailable) {
-        throw new Error('Subdomain is already taken');
-      }
-
-      // Upload profile to IPFS
-      const ipfsHash = await this.uploadToIPFS(profile);
-      console.log('Profile prepared for IPFS:', ipfsHash);
-
-      // Get the signer's address
-      const signerAddress = await this.signer.getAddress();
-
-      // Create ENS Registry contract instance
-      const ensRegistry = new ethers.Contract(
-        this.network.ensRegistry,
-        ENS_REGISTRY_ABI,
-        this.signer
-      );
-
-      // Create the subdomain
-      const nodeHash = ethers.namehash(ENS_CONFIG.parentDomain);
-      const labelHash = ethers.keccak256(ethers.toUtf8Bytes(subdomain));
-      
-      console.log('Creating subdomain:', `${subdomain}.${ENS_CONFIG.parentDomain}`);
-      console.log('Node hash:', nodeHash);
-      console.log('Label hash:', labelHash);
-
-      // Set the subdomain record with gas limit
-      const createTx = await ensRegistry.setSubnodeRecord(
-        nodeHash,
-        labelHash,
-        signerAddress,
-        this.network.publicResolver,
-        0,
-        { gasLimit: ENS_CONFIG.gasLimit.createSubdomain }
-      );
-
-      console.log('Subdomain creation transaction:', createTx.hash);
-      await createTx.wait(ENS_CONFIG.confirmations);
-      console.log('Subdomain created successfully');
-
-      // Set the resolver
-      const setResolverTx = await ensRegistry.setResolver(
-        ethers.namehash(`${subdomain}.${ENS_CONFIG.parentDomain}`),
-        this.network.publicResolver,
-        { gasLimit: ENS_CONFIG.gasLimit.setResolver }
-      );
-
-      console.log('Resolver set transaction:', setResolverTx.hash);
-      await setResolverTx.wait(ENS_CONFIG.confirmations);
-      console.log('Resolver set successfully');
-
-      // Update the resolver with profile data
-      const resolver = new ethers.Contract(
-        this.network.publicResolver,
-        PUBLIC_RESOLVER_ABI,
-        this.signer
-      );
-
-      const profileNodeHash = ethers.namehash(`${subdomain}.${ENS_CONFIG.parentDomain}`);
-
-      // Set content hash (IPFS hash)
-      const contentHash = this.encodeContenthash(ipfsHash);
-      const setContentHashTx = await resolver.setContenthash(
-        profileNodeHash, 
-        contentHash,
-        { gasLimit: ENS_CONFIG.gasLimit.setContentHash }
-      );
-      console.log('Content hash set transaction:', setContentHashTx.hash);
-      await setContentHashTx.wait(ENS_CONFIG.confirmations);
-
-      // Set text records
-      const setTextPromises = [];
-      
-      if (profile.displayName) {
-        setTextPromises.push(
-          resolver.setText(profileNodeHash, 'name', profile.displayName, { gasLimit: ENS_CONFIG.gasLimit.setText })
-        );
-      }
-      
-      if (profile.bio) {
-        setTextPromises.push(
-          resolver.setText(profileNodeHash, 'description', profile.bio, { gasLimit: ENS_CONFIG.gasLimit.setText })
-        );
-      }
-      
-      if (profile.website) {
-        setTextPromises.push(
-          resolver.setText(profileNodeHash, 'url', profile.website, { gasLimit: ENS_CONFIG.gasLimit.setText })
-        );
-      }
-      
-      if (profile.twitter) {
-        setTextPromises.push(
-          resolver.setText(profileNodeHash, 'com.twitter', profile.twitter, { gasLimit: ENS_CONFIG.gasLimit.setText })
-        );
-      }
-      
-      if (profile.github) {
-        setTextPromises.push(
-          resolver.setText(profileNodeHash, 'com.github', profile.github, { gasLimit: ENS_CONFIG.gasLimit.setText })
-        );
-      }
-
-      // Wait for all text records to be set
-      if (setTextPromises.length > 0) {
-        const textTxs = await Promise.all(setTextPromises);
-        console.log('Text records set:', textTxs.length);
-        
-        for (const tx of textTxs) {
-          await tx.wait(ENS_CONFIG.confirmations);
+                const isAvailable = await contract.isSubdomainAvailable(subdomain);
+                if (isAvailable) {
+                    const fee = await contract.getRegistrationFee(subdomain, 365 * 24 * 60 * 60); // 1 year
+                    return {
+                        available: true,
+                        price: ethers.formatEther(fee)
+                    };
+                } else {
+                    return { available: false };
+                }
+            } else {
+                // Fallback to L1 ENS check
+                return await this.checkL1SubdomainAvailability(subdomain);
+            }
+        } catch (error: any) {
+            console.error('Error checking subdomain availability:', error);
+            return {
+                available: false,
+                error: error.message
+            };
         }
-      }
-
-      console.log('ENS profile created successfully!');
-      return ipfsHash;
-
-    } catch (error) {
-      console.error('Error creating ENS profile:', error);
-      throw error;
     }
-  }
 
-  /**
-   * Encode IPFS hash for ENS contenthash
-   */
-  private encodeContenthash(ipfsHash: string): string {
-    // For now, we'll use a simple hex encoding
-    // In production with real IPFS, you'd use proper base58/base32 encoding
-    if (ipfsHash.startsWith('Qm')) {
-      // Convert mock IPFS hash to hex format
-      const hashHex = ipfsHash.slice(2); // Remove 'Qm' prefix
-      return '0x' + hashHex;
+    private async checkL1SubdomainAvailability(subdomain: string): Promise<{ available: boolean; price?: string; error?: string }> {
+        try {
+            if (!this.provider) {
+                throw new Error('Provider not initialized');
+            }
+
+            const fullName = `${subdomain}.${ENS_CONFIG.parentDomain}`;
+            const namehash = ethers.namehash(fullName);
+            
+            const registry = new ethers.Contract(
+                '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e',
+                ENS_REGISTRY_ABI,
+                this.provider
+            );
+            
+            const owner = await registry.owner(namehash);
+            return { available: owner === ethers.ZeroAddress };
+        } catch (error: any) {
+            return { available: false, error: error.message };
+        }
     }
-    
-    throw new Error('Invalid IPFS hash format');
-  }
 
-  /**
-   * Resolve ENS profile from blockchain
-   */
-  async resolveENSProfile(ensName: string): Promise<ENSProfile | null> {
-    try {
-      if (!this.provider) {
-        throw new Error('Provider not initialized');
-      }
+    async getSubdomainRegistrationFee(subdomain: string, duration: number = 365 * 24 * 60 * 60): Promise<string> {
+        try {
+            if (!this.l2Provider || !this.l2Signer) {
+                throw new Error('L2 provider not initialized');
+            }
 
-      const resolver = new ethers.Contract(
-        this.network.publicResolver,
-        PUBLIC_RESOLVER_ABI,
-        this.provider
-      );
+            const { L2ENSRegistrarContract } = await import('../app/abi');
+            const contract = new ethers.Contract(
+                L2ENSRegistrarContract.address,
+                L2_ENS_REGISTRAR_ABI,
+                this.l2Signer
+            );
 
-      const nodeHash = ethers.namehash(ensName);
-
-      // Get content hash (IPFS hash)
-      const contentHash = await resolver.contenthash(nodeHash);
-      
-      if (!contentHash || contentHash === '0x') {
-        return null;
-      }
-
-      // Decode content hash to get IPFS hash
-      const ipfsHash = this.decodeContenthash(contentHash);
-      
-      // Fetch profile data from IPFS
-      const profileData = await this.fetchFromIPFS(ipfsHash);
-      
-      return {
-        ensName,
-        displayName: profileData.name || '',
-        bio: profileData.description || '',
-        avatar: profileData.avatar,
-        website: profileData.website,
-        twitter: profileData.twitter,
-        github: profileData.github,
-        isVerified: true,
-        createdAt: profileData.created_at || new Date().toISOString(),
-        ipfsHash
-      };
-
-    } catch (error) {
-      console.error('Error resolving ENS profile:', error);
-      return null;
+            const fee = await contract.getRegistrationFee(subdomain, duration);
+            return ethers.formatEther(fee);
+        } catch (error: any) {
+            console.error('Error getting registration fee:', error);
+            throw new Error('Failed to get registration fee');
+        }
     }
-  }
 
-  /**
-   * Decode ENS contenthash to IPFS hash
-   */
-  private decodeContenthash(contentHash: string): string {
-    if (contentHash.startsWith('0x')) {
-      contentHash = contentHash.slice(2);
+    async createENSProfile(
+        subdomain: string,
+        profileData: {
+            name: string;
+            role: string;
+            company: string;
+            bio: string;
+            avatar: string;
+            social: {
+                twitter?: string;
+                linkedin?: string;
+                github?: string;
+                website?: string;
+            };
+        },
+        duration: number = 365 * 24 * 60 * 60
+    ): Promise<{ success: boolean; txHash?: string; error?: string }> {
+        try {
+            if (!this.l2Provider || !this.l2Signer) {
+                throw new Error('L2 provider not initialized');
+            }
+
+            // Switch to L2 network if needed
+            await this.switchNetwork(4202); // Lisk Sepolia
+
+            const { L2ENSRegistrarContract } = await import('../app/abi');
+            const contract = new ethers.Contract(
+                L2ENSRegistrarContract.address,
+                L2_ENS_REGISTRAR_ABI,
+                this.l2Signer
+            );
+
+            // Get registration fee
+            const fee = await contract.getRegistrationFee(subdomain, duration);
+            
+            // Register subdomain
+            const tx = await contract.registerSubdomain(subdomain, await this.l2Signer.getAddress(), duration, {
+                value: fee
+            });
+
+            const receipt = await tx.wait();
+            
+            // Store profile data on IPFS (you'll need to implement this)
+            const ipfsCid = await this.storeProfileDataOnIPFS(profileData);
+            
+            return {
+                success: true,
+                txHash: receipt.hash
+            };
+        } catch (error: any) {
+            console.error('Error creating ENS profile:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
     }
-    
-    // For now, convert back to mock IPFS format
-    // In production, you'd use proper base58/base32 decoding
-    return `Qm${contentHash}`;
-  }
 
-  /**
-   * Fetch data from IPFS using HTTP gateway
-   */
-  private async fetchFromIPFS(ipfsHash: string): Promise<{
-    name: string;
-    description: string;
-    avatar?: string;
-    website?: string;
-    twitter?: string;
-    github?: string;
-    created_at?: string;
-  }> {
-    try {
-      // Try to fetch from IPFS gateway
-      const response = await fetch(`${IPFS_CONFIG.gateway}${ipfsHash}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.text();
-      return JSON.parse(data);
-    } catch (error) {
-      console.error('Error fetching from IPFS:', error);
-      throw new Error('Failed to fetch profile from IPFS');
+    async setProfileDataViaCCIP(
+        subdomain: string,
+        profileData: any
+    ): Promise<{ success: boolean; error?: string }> {
+        try {
+            // This would integrate with CCIP Read for cross-chain profile data
+            // For now, we'll store on IPFS and link via the main contract
+            const ipfsCid = await this.storeProfileDataOnIPFS(profileData);
+            
+            // Link the profile data to the user's income source or document
+            // This will be handled by the main Nosen contract
+            
+            return { success: true };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
     }
-  }
 
-  /**
-   * Get gas estimate for profile creation
-   */
-  async estimateGasForProfileCreation(subdomain: string): Promise<bigint> {
-    try {
-      if (!this.signer) {
-        throw new Error('Signer not initialized');
-      }
+    async resolveENSProfile(subdomain: string): Promise<{ profile?: any; error?: string }> {
+        try {
+            const network = await this.l2Provider?.getNetwork();
+            const isL2 = network?.chainId === 4202n;
 
-      const ensRegistry = new ethers.Contract(
-        this.network.ensRegistry,
-        ENS_REGISTRY_ABI,
-        this.signer
-      );
-
-      const nodeHash = ethers.namehash(ENS_CONFIG.parentDomain);
-      const labelHash = ethers.keccak256(ethers.toUtf8Bytes(subdomain));
-      const signerAddress = await this.signer.getAddress();
-
-      const gasEstimate = await ensRegistry.setSubnodeRecord.estimateGas(
-        nodeHash,
-        labelHash,
-        signerAddress,
-        this.network.publicResolver,
-        0
-      );
-
-      return gasEstimate;
-    } catch (error) {
-      console.error('Error estimating gas:', error);
-      throw new Error('Failed to estimate gas');
+            if (isL2) {
+                return await this.resolveL2Profile(subdomain);
+            } else {
+                return await this.resolveL1Profile(subdomain);
+            }
+        } catch (error: any) {
+            return { error: error.message };
+        }
     }
-  }
 
-  /**
-   * Get current network info
-   */
-  getCurrentNetwork() {
-    return this.network;
-  }
+    private async resolveL2Profile(subdomain: string): Promise<{ profile?: any; error?: string }> {
+        try {
+            if (!this.l2Provider) {
+                throw new Error('L2 provider not initialized');
+            }
+
+            const { L2ENSRegistrarContract } = await import('../app/abi');
+            const contract = new ethers.Contract(
+                L2ENSRegistrarContract.address,
+                L2_ENS_REGISTRAR_ABI,
+                this.l2Provider
+            );
+
+            const info = await contract.getSubdomainInfo(subdomain);
+            if (!info.exists) {
+                return { error: 'Profile not found' };
+            }
+
+            // Get profile data from IPFS (you'll need to implement this)
+            const profileData = await this.getProfileDataFromIPFS(subdomain);
+            
+            return { profile: profileData };
+        } catch (error: any) {
+            return { error: error.message };
+        }
+    }
+
+    private async resolveL1Profile(subdomain: string): Promise<{ profile?: any; error?: string }> {
+        try {
+            if (!this.provider) {
+                throw new Error('Provider not initialized');
+            }
+
+            const fullName = `${subdomain}.${ENS_CONFIG.parentDomain}`;
+            const namehash = ethers.namehash(fullName);
+            
+            const resolver = new ethers.Contract(
+                '0x4976fb03C32e5B8cfe2b6cA31D7B3fC3D5A9C6B8',
+                PUBLIC_RESOLVER_ABI,
+                this.provider
+            );
+            
+            const contentHash = await resolver.contenthash(namehash);
+            if (contentHash === '0x') {
+                return { error: 'Profile not found' };
+            }
+
+            // Decode IPFS hash and fetch profile data
+            const profileData = await this.getProfileDataFromIPFS(contentHash);
+            
+            return { profile: profileData };
+        } catch (error: any) {
+            return { error: error.message };
+        }
+    }
+
+    async estimateGasForProfileCreation(subdomain: string, duration: number = 365 * 24 * 60 * 60): Promise<{ l2Gas?: string; l1Gas?: string; error?: string }> {
+        try {
+            const estimates: { l2Gas?: string; l1Gas?: string; error?: string } = {};
+
+            // Estimate L2 gas
+            try {
+                if (this.l2Provider && this.l2Signer) {
+                    const { L2ENSRegistrarContract } = await import('../app/abi');
+                    const contract = new ethers.Contract(
+                        L2ENSRegistrarContract.address,
+                        L2_ENS_REGISTRAR_ABI,
+                        this.l2Signer
+                    );
+
+                    const fee = await contract.getRegistrationFee(subdomain, duration);
+                    const gasEstimate = await contract.registerSubdomain.estimateGas(
+                        subdomain,
+                        await this.l2Signer.getAddress(),
+                        duration,
+                        { value: fee }
+                    );
+                    
+                    estimates.l2Gas = gasEstimate.toString();
+                }
+            } catch (error) {
+                estimates.error = `L2 estimation failed: ${error}`;
+            }
+
+            // Estimate L1 gas (fallback)
+            try {
+                if (this.provider && this.signer) {
+                    // This would be for L1 ENS operations
+                    estimates.l1Gas = '200000'; // Default estimate
+                }
+            } catch (error) {
+                if (!estimates.error) {
+                    estimates.error = `L1 estimation failed: ${error}`;
+                }
+            }
+
+            return estimates;
+        } catch (error: any) {
+            return { error: error.message };
+        }
+    }
+
+    async isL2Enabled(): Promise<boolean> {
+        try {
+            if (!this.l2Provider) return false;
+            const network = await this.l2Provider.getNetwork();
+            return network.chainId === 4202n; // Lisk Sepolia
+        } catch {
+            return false;
+        }
+    }
+
+    async getL2SubdomainInfo(subdomain: string): Promise<{ owner: string; expiry: number; exists: boolean; error?: string }> {
+        try {
+            if (!this.l2Provider) {
+                throw new Error('L2 provider not initialized');
+            }
+
+            const { L2ENSRegistrarContract } = await import('../app/abi');
+            const contract = new ethers.Contract(
+                L2ENSRegistrarContract.address,
+                L2_ENS_REGISTRAR_ABI,
+                this.l2Provider
+            );
+
+            const info = await contract.getSubdomainInfo(subdomain);
+            return {
+                owner: info.owner,
+                expiry: Number(info.expiry),
+                exists: info.exists
+            };
+        } catch (error: any) {
+            return { owner: '', expiry: 0, exists: false, error: error.message };
+        }
+    }
+
+    async renewL2Subdomain(subdomain: string, duration: number = 365 * 24 * 60 * 60): Promise<{ success: boolean; txHash?: string; error?: string }> {
+        try {
+            if (!this.l2Provider || !this.l2Signer) {
+                throw new Error('L2 provider not initialized');
+            }
+
+            const { L2ENSRegistrarContract } = await import('../app/abi');
+            const contract = new ethers.Contract(
+                L2ENSRegistrarContract.address,
+                L2_ENS_REGISTRAR_ABI,
+                this.l2Signer
+            );
+
+            const fee = await contract.getRegistrationFee(subdomain, duration);
+            const tx = await contract.renewSubdomain(subdomain, duration, { value: fee });
+            const receipt = await tx.wait();
+
+            return {
+                success: true,
+                txHash: receipt.hash
+            };
+        } catch (error: any) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    async transferL2Subdomain(subdomain: string, to: string): Promise<{ success: boolean; txHash?: string; error?: string }> {
+        try {
+            if (!this.l2Provider || !this.l2Signer) {
+                throw new Error('L2 provider not initialized');
+            }
+
+            const { L2ENSRegistrarContract } = await import('../app/abi');
+            const contract = new ethers.Contract(
+                L2ENSRegistrarContract.address,
+                L2_ENS_REGISTRAR_ABI,
+                this.l2Signer
+            );
+
+            const tx = await contract.transferSubdomain(subdomain, to);
+            const receipt = await tx.wait();
+
+            return {
+                success: true,
+                txHash: receipt.hash
+            };
+        } catch (error: any) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    // IPFS helper functions (you'll need to implement these)
+    private async storeProfileDataOnIPFS(profileData: any): Promise<string> {
+        // Implement IPFS storage logic
+        // This could use Pinata, Infura IPFS, or other services
+        console.log('Storing profile data on IPFS:', profileData);
+        return 'QmExampleIPFSHash'; // Placeholder
+    }
+
+    private async getProfileDataFromIPFS(identifier: string): Promise<any> {
+        // Implement IPFS retrieval logic
+        console.log('Retrieving profile data from IPFS:', identifier);
+        return {}; // Placeholder
+    }
+
+    // Get current network info
+    async getCurrentNetwork() {
+        if (!this.provider) return null;
+        try {
+            const network = await this.provider.getNetwork();
+            return {
+                chainId: network.chainId,
+                name: network.name
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    // Check if wallet is connected
+    async isWalletConnected(): Promise<boolean> {
+        try {
+            if (!this.provider) return false;
+            const accounts = await this.provider.listAccounts();
+            return accounts.length > 0;
+        } catch {
+            return false;
+        }
+    }
+
+    // Get connected account
+    async getConnectedAccount(): Promise<string | null> {
+        try {
+            if (!this.signer) return null;
+            return await this.signer.getAddress();
+        } catch {
+            return null;
+        }
+    }
 }
 
-// Export singleton instance
 export const ensService = new ENSService();
+

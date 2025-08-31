@@ -6,6 +6,10 @@ export interface NetworkConfig {
   ensRegistry: string;
   publicResolver: string;
   reverseRegistrar: string;
+  // L2 ENS specific fields
+  isL2: boolean;
+  l2ENSRegistrar?: string;
+  ccipGateway?: string;
   nativeCurrency: {
     name: string;
     symbol: string;
@@ -15,15 +19,18 @@ export interface NetworkConfig {
 
 // Network configurations
 export const NETWORKS: Record<string, NetworkConfig> = {
-  // Lisk Sepolia Testnet
+  // Lisk Sepolia Testnet (L2)
   liskSepolia: {
     chainId: 4202,
     name: 'Lisk Sepolia Testnet',
     rpcUrl: 'https://rpc.sepolia.lisk.com',
     blockExplorer: 'https://sepolia-blockscout.lisk.com',
-    ensRegistry: '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e', // Placeholder - needs actual deployment
-    publicResolver: '0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41', // Placeholder
-    reverseRegistrar: '0x084b1c3C81545d370f3634392De611CaaBFf8148', // Placeholder
+    ensRegistry: '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e', // L1 ENS Registry
+    publicResolver: '0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41', // L1 Public Resolver
+    reverseRegistrar: '0x084b1c3C81545d370f3634392De611CaaBFf8148', // L1 Reverse Registrar
+    isL2: true,
+    l2ENSRegistrar: process.env.NEXT_PUBLIC_LISK_ENS_REGISTRAR || '0x0000000000000000000000000000000000000000', // L2 ENS Registrar contract
+    ccipGateway: process.env.NEXT_PUBLIC_CCIP_GATEWAY || 'https://ccip.ens.domains', // CCIP Gateway
     nativeCurrency: {
       name: 'Lisk',
       symbol: 'LSK',
@@ -31,7 +38,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     },
   },
   
-  // Ethereum Sepolia Testnet (for testing ENS functionality)
+  // Ethereum Sepolia Testnet (L1 - for testing)
   sepolia: {
     chainId: 11155111,
     name: 'Sepolia Testnet',
@@ -40,6 +47,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     ensRegistry: '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e',
     publicResolver: '0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41',
     reverseRegistrar: '0x084b1c3C81545d370f3634392De611CaaBFf8148',
+    isL2: false,
     nativeCurrency: {
       name: 'Sepolia Ether',
       symbol: 'SEP',
@@ -47,7 +55,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     },
   },
   
-  // Ethereum Mainnet (for reference)
+  // Ethereum Mainnet (L1 - for reference)
   mainnet: {
     chainId: 1,
     name: 'Ethereum Mainnet',
@@ -56,6 +64,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     ensRegistry: '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e',
     publicResolver: '0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41',
     reverseRegistrar: '0x084b1c3C81545d370f3634392De611CaaBFf8148',
+    isL2: false,
     nativeCurrency: {
       name: 'Ether',
       symbol: 'ETH',
@@ -80,17 +89,28 @@ export const IPFS_CONFIG = {
 
 // ENS configuration
 export const ENS_CONFIG = {
-  // The parent domain that users will get subdomains from
+  // The parent domain that users will get subdomains from (L1)
   parentDomain: process.env.NEXT_PUBLIC_ENS_PARENT_DOMAIN || 'nosen.eth',
   
-  // Gas settings
+  // L2 ENS settings
+  useL2: true, // Enable L2 subname creation
+  l2ChainId: 4202, // Lisk Sepolia chain ID
+  
+  // CCIP Read configuration
+  ccipRead: {
+    enabled: true,
+    timeout: 30000, // 30 seconds
+    retries: 3,
+  },
+  
+  // Gas settings (much lower on L2)
   gasLimit: {
-    createSubdomain: 200000, // Estimated gas for subdomain creation
-    setResolver: 100000,     // Estimated gas for setting resolver
-    setContentHash: 80000,   // Estimated gas for setting content hash
-    setText: 50000,          // Estimated gas for each text record
+    createSubdomain: 50000,  // Reduced from 200000 for L2
+    setResolver: 25000,      // Reduced from 100000 for L2
+    setContentHash: 15000,   // Reduced from 80000 for L2
+    setText: 10000,          // Reduced from 50000 for L2
   },
   
   // Transaction confirmation settings
-  confirmations: 2, // Number of block confirmations to wait for
+  confirmations: 1, // Reduced from 2 for L2 (faster finality)
 };

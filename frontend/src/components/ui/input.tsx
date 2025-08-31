@@ -1,0 +1,30 @@
+import * as React from "react"
+import { cn } from "../../lib/utils"
+import { useTheme } from "../../app/contexts/ThemeContext"
+
+export interface InputProps
+  extends React.InputHTMLAttributes<HTMLInputElement> {}
+
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, ...props }, ref) => {
+    const { theme } = useTheme();
+    
+    return (
+      <input
+        type={type}
+        className={cn(
+          "flex h-12 w-full rounded-xl border-2 px-4 py-3 text-base transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          theme === 'dark'
+            ? "bg-slate-800 border-slate-600 text-white placeholder:text-slate-400 focus:border-emerald-500"
+            : "bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-emerald-500",
+          className
+        )}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
+Input.displayName = "Input"
+
+export { Input }
