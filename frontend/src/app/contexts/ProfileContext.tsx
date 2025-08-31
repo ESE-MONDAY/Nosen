@@ -18,7 +18,6 @@ interface ProfileContextType {
   hasProfile: boolean;
   isLoading: boolean;
   refreshProfile: () => Promise<void>;
-  updateProfile: (updates: Partial<ENSProfile>) => Promise<void>;
   checkProfileAvailability: (subdomain: string) => Promise<boolean>;
   estimateGas: (subdomain: string) => Promise<string>;
 }
@@ -82,27 +81,13 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
           };
           console.log('ProfileContext: Setting profile from blockchain:', ensProfile);
           setProfile(ensProfile);
-          setIsLoading(false);
-          return;
+        } else {
+          console.log('ProfileContext: No subdomain found on blockchain');
+          setProfile(null);
         }
       } catch (blockchainError) {
         console.error('ProfileContext: Blockchain check failed:', blockchainError);
-        console.log('ProfileContext: Falling back to localStorage check...');
-      }
-
-      // Check localStorage as fallback for legacy profiles or if blockchain check fails
-      try {
-        const savedProfile = localStorage.getItem(`profile_${address}`);
-        if (savedProfile) {
-          const parsedProfile = JSON.parse(savedProfile);
-          console.log('ProfileContext: Setting profile from localStorage:', parsedProfile);
-          setProfile(parsedProfile);
-        } else {
-          console.log('ProfileContext: No profile found in localStorage');
-          setProfile(null);
-        }
-      } catch (localStorageError) {
-        console.error('ProfileContext: localStorage check failed:', localStorageError);
+        console.log('ProfileContext: Setting profile to null due to blockchain error');
         setProfile(null);
       }
     } catch (error) {
@@ -110,28 +95,6 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
       setProfile(null);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const updateProfile = async (updates: Partial<ENSProfile>) => {
-    if (!profile || !address) throw new Error('No profile to update');
-    
-    try {
-      const updatedProfile = { ...profile, ...updates };
-      
-      // TODO: Update profile metadata on IPFS and ENS record
-      // This would involve:
-      // 1. Uploading updated metadata to IPFS
-      // 2. Updating the ENS contenthash record
-      // 3. Updating text records if needed
-      
-      // Save to localStorage for demo purposes
-      localStorage.setItem(`profile_${address}`, JSON.stringify(updatedProfile));
-      setProfile(updatedProfile);
-      
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      throw error;
     }
   };
 
@@ -169,7 +132,6 @@ export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) =>
     hasProfile: !!profile,
     isLoading,
     refreshProfile,
-    updateProfile,
     checkProfileAvailability,
     estimateGas,
   };

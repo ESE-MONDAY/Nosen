@@ -144,17 +144,7 @@ export default function CreateProfilePage() {
             );
             
             if (result.success) {
-                // Store profile information in localStorage
-                const profileData = {
-                    ensName: `${formData.subdomain}.nosen.eth`,
-                    displayName: formData.subdomain,
-                    bio: '',
-                    isVerified: true,
-                    createdAt: new Date().toISOString(),
-                };
-                localStorage.setItem(`profile_${address}`, JSON.stringify(profileData));
-                
-                // Refresh the profile context
+                // Refresh the profile context to detect the new subdomain
                 await refreshProfile();
                 
                 setRegisteredSubdomain(formData.subdomain);
@@ -206,9 +196,7 @@ export default function CreateProfilePage() {
                                         try {
                                             const existingSubdomain = await ensService.getUserSubdomain(address);
                                             setUserHasSubdomain(!!existingSubdomain);
-                                            if (existingSubdomain) {
-                                                await refreshProfile();
-                                            }
+                                            await refreshProfile();
                                         } catch (error) {
                                             console.error('Error refreshing subdomain status:', error);
                                         }
