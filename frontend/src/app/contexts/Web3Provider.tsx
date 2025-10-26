@@ -20,7 +20,9 @@ const config = createConfig({
   chains: [liskSepolia],
   connectors: [
     injected(),
-    walletConnect({ projectId: 'de402f4943c2f9ea2c590517377f8173' }),
+    walletConnect({ 
+      projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || ''
+    }),
     coinbaseWallet({ appName: 'Nosen - Web3 Income Verification Platform' }),
   ],
   transports: {
