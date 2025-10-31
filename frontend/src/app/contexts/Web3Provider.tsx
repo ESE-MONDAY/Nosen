@@ -1,42 +1,60 @@
 'use client';
 
-import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
-import { createConfig, WagmiProvider, http } from 'wagmi';
+import { createAppKit } from '@reown/appkit/react';
+import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
+import { WagmiProvider } from 'wagmi';
 import { liskSepolia } from 'wagmi/chains';
-import { injected, walletConnect, coinbaseWallet } from 'wagmi/connectors';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import '@rainbow-me/rainbowkit/styles.css';
 import { ReactNode } from 'react';
 
 interface Web3ProviderProps {
   children: ReactNode;
 }
 
+// Get the WalletConnect project ID from environment variables
+const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '';
+
+if (!projectId) {
+  console.warn('NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is not set');
+}
+
 // Create a query client
 const queryClient = new QueryClient();
 
-// Create a wagmi config with the connectors we want
-const config = createConfig({
-  chains: [liskSepolia],
-  connectors: [
-    injected(),
-    walletConnect({ 
-      projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || ''
-    }),
-    coinbaseWallet({ appName: 'Nosen - Web3 Income Verification Platform' }),
-  ],
-  transports: {
-    [liskSepolia.id]: http(),
+// Metadata for your application
+const metadata = {
+  name: 'Nosen',
+  description: 'Web3 Income Verification Platform',
+  url: 'https://nosen.app', // Update with your actual URL
+  icons: ['https://nosen.app/icon.png'] // Update with your actual icon
+};
+
+// Define the networks you want to support
+const networks = [liskSepolia] as const;
+
+// Create the Wagmi adapter
+const wagmiAdapter = new WagmiAdapter({
+  networks,
+  projectId,
+  ssr: true,
+});
+
+// Initialize AppKit
+createAppKit({
+  adapters: [wagmiAdapter],
+  networks,
+  projectId,
+  metadata,
+  features: {
+    analytics: true,
   },
 });
 
 export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
   return (
-    <WagmiProvider config={config}>
+    <WagmiProvider config={wagmiAdapter.wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider>
-          {children}
-        </RainbowKitProvider>
+        {children}
       </QueryClientProvider>
     </WagmiProvider>
   );
