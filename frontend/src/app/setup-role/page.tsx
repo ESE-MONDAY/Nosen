@@ -1,12 +1,12 @@
 'use client'
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Building2, User, ArrowRight, CheckCircle2, X } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useRole } from '../contexts/RoleContext';
 
-const SetupRolePage = () => {
+const SetupRoleContent = () => {
   const { theme } = useTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -242,6 +242,18 @@ const SetupRolePage = () => {
         </motion.div>
       </div>
     </div>
+  );
+};
+
+const SetupRolePage = () => {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+      </div>
+    }>
+      <SetupRoleContent />
+    </Suspense>
   );
 };
 
