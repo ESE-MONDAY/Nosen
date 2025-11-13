@@ -1,5 +1,7 @@
 import { ethers } from 'ethers';
-import { NosenContract } from '../app/abi';
+
+// Nosen Platform Contract Address
+const NOSEN_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_NOSEN_CONTRACT_ADDRESS || '0xD15bb0dcA1397156c7940d243cb80379B6552E57';
 
 // Nosen Platform ABI (from your deployed contract)
 const NOSEN_PLATFORM_ABI = [
@@ -181,7 +183,7 @@ export class NosenService {
 
         // Create contract instance with public client for reads
         this.contract = new ethers.Contract(
-            NosenContract.address,
+            NOSEN_CONTRACT_ADDRESS,
             NOSEN_PLATFORM_ABI,
             publicClient
         );
@@ -226,7 +228,7 @@ export class NosenService {
 
             // Send transaction
             const hash = await walletClient.sendTransaction({
-                to: NosenContract.address,
+                to: NOSEN_CONTRACT_ADDRESS,
                 data,
                 value: fee
             });
@@ -290,7 +292,7 @@ export class NosenService {
 
             // Send transaction
             const hash = await walletClient.sendTransaction({
-                to: NosenContract.address,
+                to: NOSEN_CONTRACT_ADDRESS,
                 data
             });
 
@@ -319,7 +321,7 @@ export class NosenService {
 
             // Send transaction
             const hash = await walletClient.sendTransaction({
-                to: NosenContract.address,
+                to: NOSEN_CONTRACT_ADDRESS,
                 data
             });
 
@@ -348,7 +350,7 @@ export class NosenService {
 
             // Send transaction
             const hash = await walletClient.sendTransaction({
-                to: NosenContract.address,
+                to: NOSEN_CONTRACT_ADDRESS,
                 data
             });
 
@@ -377,7 +379,7 @@ export class NosenService {
 
             // Send transaction
             const hash = await walletClient.sendTransaction({
-                to: NosenContract.address,
+                to: NOSEN_CONTRACT_ADDRESS,
                 data
             });
 
@@ -406,7 +408,7 @@ export class NosenService {
 
             // Send transaction
             const hash = await walletClient.sendTransaction({
-                to: NosenContract.address,
+                to: NOSEN_CONTRACT_ADDRESS,
                 data
             });
 
@@ -462,7 +464,7 @@ export class NosenService {
 
             // Send transaction
             const hash = await walletClient.sendTransaction({
-                to: NosenContract.address,
+                to: NOSEN_CONTRACT_ADDRESS,
                 data,
                 value: fee
             });
@@ -500,7 +502,7 @@ export class NosenService {
 
             // Send transaction
             const hash = await walletClient.sendTransaction({
-                to: NosenContract.address,
+                to: NOSEN_CONTRACT_ADDRESS,
                 data
             });
 
@@ -552,7 +554,7 @@ export class NosenService {
 
             // Send transaction
             const hash = await walletClient.sendTransaction({
-                to: NosenContract.address,
+                to: NOSEN_CONTRACT_ADDRESS,
                 data
             });
 
@@ -581,7 +583,7 @@ export class NosenService {
 
             // Send transaction
             const hash = await walletClient.sendTransaction({
-                to: NosenContract.address,
+                to: NOSEN_CONTRACT_ADDRESS,
                 data
             });
 
@@ -640,7 +642,7 @@ export class NosenService {
 
             // Send transaction
             const hash = await walletClient.sendTransaction({
-                to: NosenContract.address,
+                to: NOSEN_CONTRACT_ADDRESS,
                 data,
                 value: fee
             });
@@ -678,7 +680,7 @@ export class NosenService {
 
             // Send transaction
             const hash = await walletClient.sendTransaction({
-                to: NosenContract.address,
+                to: NOSEN_CONTRACT_ADDRESS,
                 data
             });
 
@@ -728,7 +730,7 @@ export class NosenService {
 
             // Send transaction
             const hash = await walletClient.sendTransaction({
-                to: NosenContract.address,
+                to: NOSEN_CONTRACT_ADDRESS,
                 data
             });
 

@@ -1,556 +1,695 @@
 'use client'
-import React from 'react';
-import { ChevronRight, Shield, FileText, Globe, Check, ArrowRight, Zap, TrendingUp, Wallet, Building, CreditCard, Eye, Link, Award, Clock, MapPin, DollarSign, Briefcase, UserCheck } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { motion, useInView, useAnimation } from 'framer-motion';
+import { 
+  Building2, 
+  User, 
+  Users, 
+  ArrowRight, 
+  CheckCircle2,
+  DollarSign,
+  Wallet,
+  CreditCard,
+  Shield,
+  Clock,
+  Settings,
+  FileText,
+  TrendingUp,
+  Globe,
+  Zap,
+  PlayCircle,
+  Sparkles,
+  PlusCircle,
+  History
+} from 'lucide-react';
 import { useTheme } from './contexts/ThemeContext';
-import ConnectWallet from './components/ConnectWallet';
-import { useAccount } from 'wagmi';
-
-import { useProfile } from './contexts/ProfileContext';
 import { useRouter } from 'next/navigation';
 
 const NosenLanding = () => {
   const { theme } = useTheme();
-  const { profile, hasProfile } = useProfile();
+  const router = useRouter();
+  const heroRef = useRef(null);
+  const heroInView = useInView(heroRef, { once: true, amount: 0.3 });
+  const heroControls = useAnimation();
 
-  const coreFeatures = [
+  useEffect(() => {
+    if (heroInView) {
+      heroControls.start('visible');
+    }
+  }, [heroInView, heroControls]);
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: [0.4, 0, 0.2, 1] as const
+      }
+    }
+  };
+
+  const employerFeatures = [
     {
-      icon: <UserCheck className="w-8 h-8" />,
-      title: "ENS Professional Identity",
-      description: `Get ${hasProfile ? profile?.ensName : 'yourname.nosen.eth'} instead of 0x742d35... Create a professional, memorable crypto identity for visa applications and employers.`
+      title: "Setup Company Profile",
+      description: "Add your company name, email, country, and essential business information",
+      icon: <Building2 className="w-6 h-6" />,
+      color: "emerald"
     },
     {
-      icon: <FileText className="w-8 h-8" />,
-      title: "Official Payslip Generation", 
-      description: "Convert crypto payments into legitimate payslips with fiat values, employer details, and tamper-proof verification hashes."
+      title: "Manage Signers",
+      description: "Add or remove authorized signers for payroll approvals and fund management",
+      icon: <Users className="w-6 h-6" />,
+      color: "emerald"
     },
     {
-      icon: <Building className="w-8 h-8" />,
-      title: "DAO Employer Verification",
-      description: "DAOs can issue verified subdomains (john.contributors.phala.eth) with automatic employer attestation in ENS records."
+      title: "Fund Your Account",
+      description: "Deposit funds once - enough to cover monthly salaries. The system handles the rest automatically",
+      icon: <PlusCircle className="w-6 h-6" />,
+      color: "emerald"
     },
     {
-      icon: <Shield className="w-8 h-8" />,
-      title: "Blockchain Income Indexing",
-      description: "Auto-detect recurring crypto payments across EVM chains using Envio indexing. Label work type, duration, and project context."
+      title: "Add Employees",
+      description: "Register team members and set their monthly salaries. Payments process automatically every month",
+      icon: <User className="w-6 h-6" />,
+      color: "emerald"
     },
     {
-      icon: <Globe className="w-8 h-8" />,
-      title: "Multi-Country Tax Compliance",
-      description: "Tax calculations for Nigeria, India, Brazil, Germany with country-specific forms and filing guidance."
+      title: "Automated Payments",
+      description: "Once set up, monthly salaries are paid automatically to all registered employees. No manual work needed",
+      icon: <Zap className="w-6 h-6" />,
+      color: "emerald"
     },
     {
-      icon: <Award className="w-8 h-8" />,
-      title: "ChainProof Registry",
-      description: "Build verifiable work history and crypto creditworthiness. Employers can verify your contributions across platforms."
+      title: "Transaction History",
+      description: "Track all automated payroll transactions, payments, and fund movements in real-time",
+      icon: <History className="w-6 h-6" />,
+      color: "emerald"
     }
   ];
 
-  const useCases = [
+  const employeeFeatures = [
     {
-      icon: <MapPin className="w-6 h-6" />,
-      title: "Visa Applications",
-      description: "Embassy-ready income proofs",
-      detail: "Generate official documentation showing stable crypto income for visa applications. Accepted by embassies worldwide."
+      title: "Wallet Balance",
+      description: "View your current balance and track monthly salary deposits in real-time",
+      icon: <Wallet className="w-6 h-6" />,
+      color: "teal"
     },
     {
+      title: "Withdraw Funds",
+      description: "Withdraw your salary to your preferred payment method instantly and securely",
       icon: <CreditCard className="w-6 h-6" />,
-      title: "Bank Loans & Credit",
-      description: "Prove income for financial services",
-      detail: "Banks accept Nosen income verification for loans, credit cards, and account opening with crypto earnings."
+      color: "teal"
     },
     {
-      icon: <Building className="w-6 h-6" />,
-      title: "Apartment Rentals",
-      description: "Landlord-friendly documentation",
-      detail: "Show consistent monthly income from DAO work with professional payslips landlords understand."
-    },
-    {
-      icon: <DollarSign className="w-6 h-6" />,
-      title: "Tax Filing",
-      description: "Compliant tax reporting",
-      detail: "Generate country-specific tax forms with proper crypto income classification and fiat conversions."
+      title: "Transaction History",
+      description: "Access complete history of all salary payments and withdrawals",
+      icon: <FileText className="w-6 h-6" />,
+      color: "teal"
     }
   ];
 
-  const ensFeatures = [
+  const keyBenefits = [
     {
-      title: "Professional Identity",
-      before: "0x742d35Cc6634C0532925a3b8D...",
-      after: hasProfile ? profile?.ensName : "yourname.nosen.eth",
-      description: "Human-readable identity for professional use"
+      icon: <Zap className="w-6 h-6" />,
+      title: "Fully Automated",
+      description: "Set up once - monthly payments process automatically. No manual intervention needed"
     },
     {
-      title: "Employer Verification", 
-      before: "Unverified freelancer",
-      after: "john.contributors.phala.eth",
-      description: "DAO-issued subdomain proves employment"
+      icon: <Shield className="w-6 h-6" />,
+      title: "Secure & Transparent",
+      description: "All transactions are recorded on-chain with full transparency"
     },
     {
-      title: "Credential Storage",
-      before: "Lost paperwork",
-      after: "ENS text records with income proofs",
-      description: "Verifiable credentials stored on-chain"
+      icon: <Globe className="w-6 h-6" />,
+      title: "Global Reach",
+      description: "Pay employees worldwide regardless of their location"
+    },
+    {
+      icon: <TrendingUp className="w-6 h-6" />,
+      title: "Low Fees",
+      description: "Significantly lower transaction costs compared to traditional banking"
+    },
+    {
+      icon: <Clock className="w-6 h-6" />,
+      title: "24/7 Access",
+      description: "Manage payroll and access funds anytime, anywhere"
+    },
+    {
+      icon: <CheckCircle2 className="w-6 h-6" />,
+      title: "Role-Based Access",
+      description: "Employers and employees have separate, secure dashboards"
     }
   ];
 
   const stats = [
-    { number: "50M+", label: "Crypto Earners Globally", subtext: "Need income verification" },
-    { number: "85%", label: "Visa Approval Rate", subtext: "With Nosen documentation" },
-    { number: "12", label: "Countries Supported", subtext: "Expanding monthly" },
-    { number: "99%", label: "Document Acceptance", subtext: "By institutions worldwide" }
-  ];
-
-  const GetStartedButton: React.FC = () => {
-    const { isConnected } = useAccount();
-    const { hasProfile, isLoading } = useProfile();
-    const router = useRouter();
-
-    if (isLoading) {
-      return (
-        <div className="px-8 py-4 rounded-xl font-semibold transition-all flex items-center gap-2 bg-slate-400 text-white">
-          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-          Loading...
-        </div>
-      );
-    }
-
-    if (hasProfile) {
-      return (
-        <button
-          onClick={() => router.push('/dashboard')}
-          className={`px-8 py-4 rounded-xl font-semibold transition-all flex items-center gap-2 ${
-            theme === 'dark'
-              ? 'bg-blue-600 hover:bg-blue-700 text-white'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
-        >
-          <UserCheck className="w-5 h-5" />
-          Go to Dashboard
-        </button>
-      );
-    }
-
-    if (isConnected) {
-      return (
-        <button
-          onClick={() => router.push('/create-profile')}
-          className={`px-8 py-4 rounded-xl font-semibold transition-all flex items-center gap-2 ${
-            theme === 'dark'
-              ? 'bg-green-600 hover:bg-green-700 text-white'
-              : 'bg-green-600 hover:bg-green-700 text-white'
-          }`}
-        >
-          <UserCheck className="w-5 h-5" />
-          Create Your ENS Profile
-        </button>
-      );
-    }
-
-    return (
-      <div className="text-center">
-        <ConnectWallet />
-        <p className="text-sm mt-2 opacity-75">
-          Connect your wallet to get started
-        </p>
-      </div>
-    );
-  };
-
-  const targetUsers = [
-    {
-      avatar: "🇳🇬",
-      name: "African DAO Contributors",
-      income: "$2,500/month in USDC",
-      challenge: "Need visa documentation for conferences",
-      solution: "Nosen ENS identity + official payslips"
-    },
-    {
-      avatar: "🇮🇳", 
-      name: "Web3 Developers",
-      income: "$4,000/month in ETH",
-      challenge: "Can't get bank loans with crypto income",
-      solution: "Verified income reports + tax compliance"
-    },
-    {
-      avatar: "🇧🇷",
-      name: "DeFi Protocol Contributors",
-      income: "$3,200/month in tokens",
-      challenge: "Landlords don't accept crypto payslips",
-      solution: "Professional documentation + employer verification"
-    }
+    { number: "100%", label: "Secure", subtext: "Blockchain-powered" },
+    { number: "< 2 min", label: "Fast", subtext: "Payment processing" },
+    { number: "24/7", label: "Available", subtext: "Always accessible" },
+    { number: "Global", label: "Reach", subtext: "Worldwide payments" }
   ];
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-900' : 'bg-slate-50'}`}>
-
-
+    <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950' : 'bg-white'}`}>
       {/* Hero Section */}
-      <section className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <div className={`inline-flex items-center px-4 py-2 border rounded-full text-sm font-medium mb-8 ${theme === 'dark' ? 'bg-slate-800/50 border-slate-600 text-slate-200' : 'bg-slate-100 border-slate-300 text-slate-700'}`}>
-              <Link className="w-4 h-4 mr-2" />
-              Built for Web3 Professionals
-            </div>
+      <section 
+        ref={heroRef}
+        className="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden"
+      >
+        {/* Animated Background Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(16,185,129,0.1),transparent_50%)]" />
+        
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate={heroControls}
+          className="max-w-7xl mx-auto relative z-10"
+        >
+          <motion.div variants={itemVariants} className="text-center mb-12">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+              className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium mb-8 backdrop-blur-sm ${
+                theme === 'dark' 
+                  ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-300' 
+                  : 'bg-emerald-50 border border-emerald-200 text-emerald-700'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Modern Payroll Platform
+            </motion.div>
             
-            <h1 className={`text-4xl md:text-6xl font-bold mb-6 leading-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-              From Wallet to{' '}
-              <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                Payslip
+            <motion.h1 
+              variants={itemVariants}
+              className={`text-5xl md:text-7xl font-bold mb-6 leading-tight ${
+                theme === 'dark' ? 'text-white' : 'text-slate-900'
+              }`}
+            >
+              Payroll Made{' '}
+              <span className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 bg-clip-text text-transparent animate-gradient">
+                Simple
               </span>
-            </h1>
+              <br />
+              <span className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 bg-clip-text text-transparent">
+                Secure & Fast
+              </span>
+            </motion.h1>
             
-            <p className={`text-xl mb-4 max-w-4xl mx-auto leading-relaxed ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
-              The first Web3-native income verification platform. Transform your crypto earnings 
-              into legitimate documentation with <strong>ENS professional identities</strong>, 
-              employer verification, and institutional-grade reports.
-            </p>
+            <motion.p 
+              variants={itemVariants}
+              className={`text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed ${
+                theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
+              }`}
+            >
+              Automated monthly payroll powered by blockchain. Employers fund once, add employees, 
+              and payments are processed automatically every month. No manual intervention needed.
+            </motion.p>
 
-            <p className="text-lg text-emerald-600 font-medium mb-8">
-              Real Income, Recognized • john-devrel.nosen.eth instead of 0x742d35...
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <GetStartedButton />
-            </div>
+            <motion.div 
+              variants={itemVariants}
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16"
+            >
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/setup-role')}
+                className="px-8 py-4 rounded-xl font-semibold text-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-lg shadow-emerald-500/50 flex items-center gap-2"
+              >
+                Get Started
+                <ArrowRight className="w-5 h-5" />
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`px-8 py-4 rounded-xl font-semibold text-lg border-2 transition-all ${
+                  theme === 'dark'
+                    ? 'border-emerald-500 text-emerald-400 hover:bg-emerald-500/10'
+                    : 'border-emerald-600 text-emerald-600 hover:bg-emerald-50'
+                }`}
+              >
+                Watch Demo
+                <PlayCircle className="w-5 h-5 inline ml-2" />
+              </motion.button>
+            </motion.div>
 
-            {/* Example ENS Identity */}
-            <div className={`mt-8 p-4 rounded-xl border max-w-md mx-auto ${theme === 'dark' ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-200'}`}>
-              <div className={`text-sm mb-2 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                {hasProfile ? 'Your Professional Identity:' : 'Example Professional Identity:'}
-              </div>
-              <div className="font-mono text-emerald-600 font-semibold">
-                {hasProfile ? profile?.ensName : 'yourname-dev.nosen.eth'}
-              </div>
-              <div className={`text-xs mt-1 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
-                {hasProfile ? 'Active • Verified • Professional' : 'Verifiable • Professional • Memorable'}
-              </div>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center group">
-                <div className={`rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all transform hover:-translate-y-1 border ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-                  <div className="text-2xl md:text-3xl font-bold text-emerald-600 mb-1">{stat.number}</div>
-                  <div className={`font-medium text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>{stat.label}</div>
-                  <div className={`text-xs mt-1 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>{stat.subtext}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+            {/* Stats Grid */}
+            <motion.div 
+              variants={itemVariants}
+              className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto"
+            >
+              {stats.map((stat, index) => (
+                <motion.div
+                  key={index}
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  className={`rounded-2xl p-6 backdrop-blur-sm border ${
+                    theme === 'dark'
+                      ? 'bg-slate-900/50 border-slate-700'
+                      : 'bg-white/80 border-slate-200 shadow-lg'
+                  }`}
+                >
+                  <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent mb-2">
+                    {stat.number}
+                  </div>
+                  <div className={`font-semibold text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                    {stat.label}
+                  </div>
+                  <div className={`text-xs mt-1 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {stat.subtext}
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </motion.div>
+        </motion.div>
       </section>
 
-      {/* Target Users */}
-      <section className={`py-16 transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-800' : 'bg-white'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className={`text-3xl md:text-4xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-              Built for Web3 Professionals Worldwide
-            </h2>
-            <p className={`text-xl ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
-              Especially those in emerging markets who face the biggest barriers
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {targetUsers.map((user, index) => (
-              <div key={index} className={`rounded-2xl p-8 hover:shadow-lg transition-all ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-50'}`}>
-                <div className="flex items-center mb-4">
-                  <span className="text-3xl mr-3">{user.avatar}</span>
-                  <div>
-                    <h3 className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{user.name}</h3>
-                    <p className="text-emerald-600 font-medium">{user.income}</p>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <div className="text-sm text-red-600 font-medium">Challenge:</div>
-                    <div className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>{user.challenge}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-emerald-600 font-medium">Nosen Solution:</div>
-                    <div className={`text-sm ${theme === 'dark' ? 'text-slate-200' : 'text-slate-700'}`}>{user.solution}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Core Features */}
-      <section id="features" className={`py-20 transition-colors duration-300 ${theme === 'dark' ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-slate-50 to-emerald-50'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className={`text-3xl md:text-4xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-              Complete Web3 Income Legitimacy Suite
+      {/* How It Works - Automated Flow */}
+      <section className={`py-24 px-4 sm:px-6 lg:px-8 ${theme === 'dark' ? 'bg-slate-900' : 'bg-slate-50'}`}>
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-16"
+          >
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/10 mb-4">
+              <Zap className="w-8 h-8 text-emerald-500" />
+            </div>
+            <h2 className={`text-4xl md:text-5xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+              How Automated Payroll Works
             </h2>
             <p className={`text-xl max-w-3xl mx-auto ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
-              From blockchain indexing to institutional documentation - everything you need to make crypto income recognized
+              Set it up once, and payments happen automatically every month. No manual processing needed.
             </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {coreFeatures.map((feature, index) => (
-              <div key={index} className="group">
-                <div className={`rounded-2xl p-8 hover:shadow-xl transition-all transform hover:-translate-y-2 border h-full ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-                  <div className="text-emerald-600 mb-6 group-hover:scale-110 transition-transform">
-                    {feature.icon}
-                  </div>
-                  <h3 className={`text-xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{feature.title}</h3>
-                  <p className={`leading-relaxed text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>{feature.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+          </motion.div>
 
-      {/* ENS Integration Showcase */}
-      <section id="ens-integration" className={`py-20 transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-800' : 'bg-white'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium mb-6 ${theme === 'dark' ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-50 text-blue-700'}`}>
-              <Link className="w-4 h-4 mr-2" />
-              Professional Identity Layer for Web3
-            </div>
-            <h2 className={`text-3xl md:text-4xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-              Professional Identity Layer for Web3
-            </h2>
-            <p className={`text-xl max-w-3xl mx-auto ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
-              First platform to use ENS for verifiable professional credentials and employer attestations
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
-            {ensFeatures.map((feature, index) => (
-              <div key={index} className="text-center">
-                <h3 className={`text-lg font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{feature.title}</h3>
-                
-                <div className="space-y-4">
-                  {/* Before */}
-                  <div className={`border rounded-lg p-4 ${theme === 'dark' ? 'bg-red-900/30 border-red-700' : 'bg-red-50 border-red-200'}`}>
-                    <div className="text-xs text-red-600 font-medium mb-2">Before</div>
-                    <div className={`font-mono text-sm break-all ${theme === 'dark' ? 'text-red-300' : 'text-red-700'}`}>{feature.before}</div>
-                  </div>
-                  
-                  {/* Arrow */}
-                  <div className="flex justify-center">
-                    <ArrowRight className="w-6 h-6 text-emerald-500" />
-                  </div>
-                  
-                  {/* After */}
-                  <div className={`border rounded-lg p-4 ${theme === 'dark' ? 'bg-emerald-900/30 border-emerald-700' : 'bg-emerald-50 border-emerald-200'}`}>
-                    <div className="text-xs text-emerald-600 font-medium mb-2">With Nosen</div>
-                    <div className={`font-mono text-sm ${theme === 'dark' ? 'text-emerald-300' : 'text-emerald-700'}`}>{feature.after}</div>
-                  </div>
-                </div>
-                
-                <p className={`text-sm mt-4 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>{feature.description}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* ENS Benefits */}
-          <div className={`rounded-2xl p-8 ${theme === 'dark' ? 'bg-gradient-to-r from-blue-900/30 to-emerald-900/30' : 'bg-gradient-to-r from-blue-50 to-emerald-50'}`}>
-            <h3 className={`text-xl font-bold mb-6 text-center ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Why ENS Integration Matters</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex items-start space-x-3">
-                <Check className="w-5 h-5 text-emerald-600 mt-1 flex-shrink-0" />
-                <div>
-                  <div className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Cross-Platform Verification</div>
-                  <div className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>Your ENS identity works across all Web3 platforms</div>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3">
-                <Check className="w-5 h-5 text-emerald-600 mt-1 flex-shrink-0" />
-                <div>
-                  <div className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Employer Attestations</div>
-                  <div className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>DAOs can verify your work history on-chain</div>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3">
-                <Check className="w-5 h-5 text-emerald-600 mt-1 flex-shrink-0" />
-                <div>
-                  <div className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Document Authenticity</div>
-                  <div className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>Payslips linked to ENS records for verification</div>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3">
-                <Check className="w-5 h-5 text-emerald-600 mt-1 flex-shrink-0" />
-                <div>
-                  <div className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Global Recognition</div>
-                  <div className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>Professional identity recognized worldwide</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Use Cases */}
-      <section id="use-cases" className={`py-20 transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-900' : 'bg-slate-800'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className={`text-3xl md:text-4xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-white'}`}>
-              Real-World Applications
-            </h2>
-            <p className={`text-xl ${theme === 'dark' ? 'text-slate-300' : 'text-slate-200'}`}>
-              Where Nosen documentation opens doors for Web3 professionals
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {useCases.map((useCase, index) => (
-              <div key={index} className={`rounded-2xl p-6 hover:bg-slate-700 transition-all ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-700'}`}>
-                <div className="text-emerald-400 mb-4">
-                  {useCase.icon}
-                </div>
-                <h3 className="font-bold text-white mb-2">{useCase.title}</h3>
-                <p className="text-slate-300 text-sm mb-3">{useCase.description}</p>
-                <p className="text-xs text-slate-400">{useCase.detail}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-16 text-center">
-            <div className={`inline-block rounded-2xl p-8 max-w-4xl ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-700'}`}>
-              <h3 className="text-xl font-bold text-emerald-400 mb-4">Success Story</h3>
-              <blockquote className="text-slate-300 italic text-lg">
-                &ldquo;I got my UK visa approved using Nosen payslips showing my $3,500/month DAO income. 
-                The embassy officer could verify my john-dev.nosen.eth identity and see 8 months of consistent payments from Gitcoin.&rdquo;
-              </blockquote>
-              <div className="mt-4 text-slate-400">
-                - Adebayo K., Lagos → London visa approved
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How it Works */}
-      <section className={`py-20 transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-800' : 'bg-white'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className={`text-3xl md:text-4xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-              Simple 4-Step Process
-            </h2>
-            <p className={`text-xl ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
-              From crypto transactions to institutional documentation in minutes
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {/* Flow Steps */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-16">
             {[
               {
-                step: "01",
-                title: "Connect Wallet",
-                description: "Link your wallet to auto-detect recurring crypto payments across EVM chains.",
-                icon: <Wallet className="w-8 h-8" />
+                step: "1",
+                title: "Fund Your Account",
+                description: "Deposit funds to cover monthly salaries. Fund once with enough for all employees.",
+                icon: <DollarSign className="w-8 h-8" />,
+                color: "emerald"
               },
               {
-                step: "02", 
-                title: "Claim ENS Identity",
-                description: "Get your professional ENS name: yourname-dev.nosen.eth",
-                icon: <Link className="w-8 h-8" />
+                step: "2",
+                title: "Add Employees",
+                description: "Register your team members and set their monthly salary amounts.",
+                icon: <User className="w-8 h-8" />,
+                color: "emerald"
               },
               {
-                step: "03",
-                title: "Add Work Context",
-                description: "Label transactions with project details, work type, and get employer verification.",
-                icon: <Briefcase className="w-8 h-8" />
-              },
-              {
-                step: "04",
-                title: "Generate Documents",
-                description: "Download professional payslips, tax reports, and income verification letters.",
-                icon: <FileText className="w-8 h-8" />
+                step: "3",
+                title: "Automated Payments",
+                description: "The system automatically processes monthly payments to all registered employees.",
+                icon: <Zap className="w-8 h-8" />,
+                color: "emerald"
               }
             ].map((step, index) => (
-              <div key={index} className="relative text-center">
-                <div className={`rounded-2xl p-8 hover:shadow-lg transition-all ${theme === 'dark' ? 'bg-emerald-900/20' : 'bg-emerald-50'}`}>
-                  <div className="text-6xl font-bold text-emerald-100 mb-4">{step.step}</div>
-                  <div className="text-emerald-600 mb-4 flex justify-center">
-                    {step.icon}
-                  </div>
-                  <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{step.title}</h3>
-                  <p className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>{step.description}</p>
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.2 }}
+                whileHover={{ scale: 1.05, y: -5 }}
+                className={`relative rounded-2xl p-8 border transition-all ${
+                  theme === 'dark'
+                    ? 'bg-slate-800 border-slate-700 hover:border-emerald-500/50'
+                    : 'bg-white border-slate-200 hover:border-emerald-300 shadow-lg hover:shadow-xl'
+                }`}
+              >
+                <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-lg">
+                  {step.step}
                 </div>
+                <div className="text-emerald-500 mb-4 mt-4">{step.icon}</div>
+                <h3 className={`text-xl font-bold mb-3 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                  {step.title}
+                </h3>
+                <p className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                  {step.description}
+                </p>
+                {index < 2 && (
+                  <div className="absolute -right-4 top-1/2 transform -translate-y-1/2 hidden md:block">
+                    <ArrowRight className={`w-8 h-8 ${theme === 'dark' ? 'text-slate-600' : 'text-slate-300'}`} />
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Key Point */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className={`max-w-3xl mx-auto rounded-2xl p-8 border ${
+              theme === 'dark'
+                ? 'bg-gradient-to-r from-emerald-900/30 to-teal-900/30 border-emerald-500/30'
+                : 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200'
+            }`}
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <CheckCircle2 className="w-8 h-8 text-emerald-500" />
               </div>
+              <div>
+                <h3 className={`text-xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                  Fully Automated Monthly Payments
+                </h3>
+                <p className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                  Once you've funded your account and added employees, the system takes over. 
+                  Every month, salaries are automatically processed and sent to all registered employees. 
+                  No need to manually initiate payments - it's completely hands-off after setup.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Role Selection Preview */}
+      <section className={`py-24 px-4 sm:px-6 lg:px-8 ${theme === 'dark' ? 'bg-slate-950' : 'bg-white'}`}>
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-16"
+          >
+            <h2 className={`text-4xl md:text-5xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+              Choose Your Role
+            </h2>
+            <p className={`text-xl max-w-3xl mx-auto ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+              Get started by selecting whether you're an employer or employee
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {/* Employer Card */}
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              whileHover={{ scale: 1.02, y: -5 }}
+              onClick={() => router.push('/setup-role?role=employer')}
+              className={`cursor-pointer rounded-2xl p-8 border transition-all ${
+                theme === 'dark'
+                  ? 'bg-slate-800 border-slate-700 hover:border-emerald-500/50'
+                  : 'bg-white border-slate-200 hover:border-emerald-300 shadow-lg hover:shadow-xl'
+              }`}
+            >
+              <div className="text-emerald-500 mb-4">
+                <Building2 className="w-12 h-12" />
+              </div>
+              <h3 className={`text-2xl font-bold mb-3 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                I'm an Employer
+              </h3>
+              <p className={`mb-6 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                Fund your account once, add employees, and let automated monthly payments handle the rest
+              </p>
+              <div className="flex items-center text-emerald-500 font-semibold">
+                Get Started <ArrowRight className="w-5 h-5 ml-2" />
+              </div>
+            </motion.div>
+
+            {/* Employee Card */}
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              whileHover={{ scale: 1.02, y: -5 }}
+              onClick={() => router.push('/setup-role?role=employee')}
+              className={`cursor-pointer rounded-2xl p-8 border transition-all ${
+                theme === 'dark'
+                  ? 'bg-slate-800 border-slate-700 hover:border-teal-500/50'
+                  : 'bg-white border-slate-200 hover:border-teal-300 shadow-lg hover:shadow-xl'
+              }`}
+            >
+              <div className="text-teal-500 mb-4">
+                <User className="w-12 h-12" />
+              </div>
+              <h3 className={`text-2xl font-bold mb-3 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                I'm an Employee
+              </h3>
+              <p className={`mb-6 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                Access your wallet, view balance, and withdraw your monthly salary payments
+              </p>
+              <div className="flex items-center text-teal-500 font-semibold">
+                Get Started <ArrowRight className="w-5 h-5 ml-2" />
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Employer Features */}
+      <section className={`py-24 px-4 sm:px-6 lg:px-8 ${theme === 'dark' ? 'bg-slate-950' : 'bg-white'}`}>
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/10 mb-4">
+              <Building2 className="w-8 h-8 text-emerald-500" />
+            </div>
+            <h2 className={`text-4xl md:text-5xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+              For Employers
+            </h2>
+            <p className={`text-xl max-w-3xl mx-auto ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+              Fund once, add employees, and enjoy fully automated monthly payroll processing
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {employerFeatures.map((feature, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ scale: 1.05, y: -5 }}
+                className={`rounded-2xl p-8 border transition-all ${
+                  theme === 'dark'
+                    ? 'bg-slate-900 border-slate-700 hover:border-emerald-500/50'
+                    : 'bg-white border-slate-200 hover:border-emerald-300 shadow-lg hover:shadow-xl'
+                }`}
+              >
+                <div className="text-emerald-500 mb-4">{feature.icon}</div>
+                <h3 className={`text-xl font-bold mb-3 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                  {feature.title}
+                </h3>
+                <p className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                  {feature.description}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Employee Features */}
+      <section className={`py-24 px-4 sm:px-6 lg:px-8 ${theme === 'dark' ? 'bg-slate-900' : 'bg-slate-50'}`}>
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-teal-500/10 mb-4">
+              <User className="w-8 h-8 text-teal-500" />
+            </div>
+            <h2 className={`text-4xl md:text-5xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+              For Employees
+            </h2>
+            <p className={`text-xl max-w-3xl mx-auto ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+              Simple, secure access to your salary and payment history
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            {employeeFeatures.map((feature, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.15 }}
+                whileHover={{ scale: 1.05, y: -5 }}
+                className={`rounded-2xl p-8 border transition-all ${
+                  theme === 'dark'
+                    ? 'bg-slate-800 border-slate-700 hover:border-teal-500/50'
+                    : 'bg-white border-slate-200 hover:border-teal-300 shadow-lg hover:shadow-xl'
+                }`}
+              >
+                <div className="text-teal-500 mb-4">{feature.icon}</div>
+                <h3 className={`text-xl font-bold mb-3 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                  {feature.title}
+                </h3>
+                <p className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                  {feature.description}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Key Benefits */}
+      <section className={`py-24 px-4 sm:px-6 lg:px-8 ${theme === 'dark' ? 'bg-slate-950' : 'bg-white'}`}>
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className={`text-4xl md:text-5xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+              Why Choose Nosen
+            </h2>
+            <p className={`text-xl max-w-3xl mx-auto ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+              Built for modern businesses and employees who need fast, secure, and transparent payroll
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {keyBenefits.map((benefit, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ scale: 1.05, y: -5 }}
+                className={`rounded-2xl p-8 border transition-all ${
+                  theme === 'dark'
+                    ? 'bg-slate-900 border-slate-700 hover:border-emerald-500/50'
+                    : 'bg-white border-slate-200 hover:border-emerald-300 shadow-lg hover:shadow-xl'
+                }`}
+              >
+                <div className="text-emerald-500 mb-4">{benefit.icon}</div>
+                <h3 className={`text-xl font-bold mb-3 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                  {benefit.title}
+                </h3>
+                <p className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                  {benefit.description}
+                </p>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className={`py-20 transition-colors duration-300 ${theme === 'dark' ? 'bg-gradient-to-r from-slate-800 to-slate-900' : 'bg-gradient-to-r from-slate-700 to-slate-800'}`}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Ready to Legitimize Your Crypto Income?
+      <section className={`py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden ${
+        theme === 'dark' 
+          ? 'bg-gradient-to-br from-emerald-900/20 via-slate-900 to-teal-900/20' 
+          : 'bg-gradient-to-br from-emerald-50 via-white to-teal-50'
+      }`}>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(16,185,129,0.1),transparent_50%)]" />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-4xl mx-auto text-center relative z-10"
+        >
+          <h2 className={`text-4xl md:text-5xl font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+            Ready to Transform Your Payroll?
           </h2>
-          <p className={`text-xl mb-8 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-100'}`}>
-            Join 10,000+ Web3 professionals who&apos;ve made their crypto income officially recognized
+          <p className={`text-xl mb-8 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+            Join forward-thinking companies using blockchain technology for secure, transparent payroll
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <ConnectWallet />
-            <button className="border-2 border-emerald-600 text-emerald-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-emerald-600 hover:text-white transition-all">
-              View Documentation
-            </button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => router.push('/setup-role')}
+              className="px-8 py-4 rounded-xl font-bold text-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-lg shadow-emerald-500/50"
+            >
+              Get Started Free
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`px-8 py-4 rounded-xl font-bold text-lg border-2 transition-all ${
+                theme === 'dark'
+                  ? 'border-emerald-500 text-emerald-400 hover:bg-emerald-500/10'
+                  : 'border-emerald-600 text-emerald-600 hover:bg-emerald-50'
+              }`}
+            >
+              Schedule Demo
+            </motion.button>
           </div>
-          
-
-        </div>
+        </motion.div>
       </section>
 
       {/* Footer */}
-      <footer className={`py-16 transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-900' : 'bg-slate-800'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <footer className={`py-16 px-4 sm:px-6 lg:px-8 ${theme === 'dark' ? 'bg-slate-950' : 'bg-slate-900'}`}>
+        <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-6">
-                <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">N</span>
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-xl">N</span>
                 </div>
-                <span className="text-xl font-bold text-white">nosen</span>
+                <span className="text-2xl font-bold text-white">nosen</span>
               </div>
               <p className="text-slate-400 mb-4">
-                Making crypto income recognized worldwide through ENS-powered professional identity.
+                Modern payroll platform powered by blockchain technology. Secure, fast, and transparent.
               </p>
-              <div className="text-xs text-slate-500">
-                Built for ENS Everywhere Hackathon
-              </div>
             </div>
             
             <div>
               <h3 className="font-semibold mb-4 text-white">Product</h3>
               <div className="space-y-2 text-slate-400 text-sm">
-                <div>ENS Integration</div>
-                <div>Income Verification</div>
-                <div>Document Generation</div>
-                <div>Tax Compliance</div>
+                <div>For Employers</div>
+                <div>For Employees</div>
+                <div>Pricing</div>
+                <div>Documentation</div>
               </div>
             </div>
             
             <div>
-              <h3 className="font-semibold mb-4 text-white">Use Cases</h3>
+              <h3 className="font-semibold mb-4 text-white">Features</h3>
               <div className="space-y-2 text-slate-400 text-sm">
-                <div>Visa Applications</div>
-                <div>Bank Loans</div>
-                <div>Apartment Rentals</div>
-                <div>Tax Filing</div>
+                <div>Payroll Management</div>
+                <div>Employee Onboarding</div>
+                <div>Transaction History</div>
+                <div>Secure Payments</div>
               </div>
             </div>
             
             <div>
               <h3 className="font-semibold mb-4 text-white">Support</h3>
               <div className="space-y-2 text-slate-400 text-sm">
-                <div>Documentation</div>
-                <div>ENS Setup Guide</div>
-                <div>Contact Support</div>
+                <div>Help Center</div>
+                <div>Contact Us</div>
                 <div>Privacy Policy</div>
+                <div>Terms of Service</div>
               </div>
             </div>
           </div>
@@ -558,7 +697,7 @@ const NosenLanding = () => {
           <div className="border-t border-slate-700 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-slate-400">&copy; 2025 Nosen. All rights reserved.</p>
             <div className="mt-4 md:mt-0 text-slate-400 text-sm">
-              Built on Ethereum
+              Built for Modern Payroll
             </div>
           </div>
         </div>
@@ -566,6 +705,5 @@ const NosenLanding = () => {
     </div>
   );
 };
-
 
 export default NosenLanding;

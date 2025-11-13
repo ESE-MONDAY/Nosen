@@ -6,6 +6,8 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { Web3Provider } from "./contexts/Web3Provider";
 import { WalletProvider } from "./contexts/WalletContext";
 import { ProfileProvider } from "./contexts/ProfileContext";
+import { RoleProvider } from "./contexts/RoleContext";
+import { SetupProviderWrapper } from "./components/SetupProviderWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,10 +37,14 @@ export default function RootLayout({
         <Web3Provider>
           <WalletProvider>
             <ProfileProvider>
-              <ThemeProvider>
-                <Navbar />
-                {children}
-              </ThemeProvider>
+              <RoleProvider>
+                <SetupProviderWrapper>
+                  <ThemeProvider>
+                    <Navbar />
+                    {children}
+                  </ThemeProvider>
+                </SetupProviderWrapper>
+              </RoleProvider>
             </ProfileProvider>
           </WalletProvider>
         </Web3Provider>

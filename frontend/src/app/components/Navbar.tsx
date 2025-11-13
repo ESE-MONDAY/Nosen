@@ -36,7 +36,6 @@ const Navbar = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
             <a href="#features" className={`${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'} transition-colors`}>Features</a>
-            <a href="#ens-integration" className={`${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'} transition-colors`}>ENS Integration</a>
             <a href="#use-cases" className={`${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'} transition-colors`}>Use Cases</a>
             <a href="#pricing" className={`${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'} transition-colors`}>Pricing</a>
             
@@ -84,7 +83,6 @@ const Navbar = () => {
         <div className={`md:hidden border-t ${theme === 'dark' ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
           <div className="px-4 py-6 space-y-4">
             <a href="#features" className={`block ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>Features</a>
-            <a href="#ens-integration" className={`block ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>ENS Integration</a>
             <a href="#use-cases" className={`block ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>Use Cases</a>
             <a href="#pricing" className={`block ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>Pricing</a>
             <div className="w-full">
