@@ -5,10 +5,9 @@ import { success, failure } from "../utils/response";
 
 const router = express.Router();
 
-
 router.post("/create", async (req: Request, res: Response) => {
   try {
-    const { employer_id, full_name, email, privy_user_id, wallet_address, salary, currency } = req.body;
+    const { employer_id, full_name, email, wallet_address, salary, currency } = req.body;
 
     if (!employer_id || !full_name || !email) {
       return failure(res, "employer_id, full_name and email are required");
@@ -28,11 +27,17 @@ router.post("/create", async (req: Request, res: Response) => {
       employer_id,
       full_name,
       email,
-      privy_user_id,
       wallet_address,
       salary,
       currency,
     });
+
+    // Push new employee into employer employees array
+    await Employer.findByIdAndUpdate(
+      employer_id,
+      { $push: { employees: employee._id } },
+      { new: true }
+    );
 
     return success(res, employee, "Employee added successfully");
   } catch (err: any) {

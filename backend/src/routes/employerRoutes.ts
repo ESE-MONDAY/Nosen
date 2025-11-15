@@ -4,10 +4,9 @@ import { success, failure } from "../utils/response";
 
 const router = express.Router();
 
-
 router.post("/signup", async (req: Request, res: Response) => {
   try {
-    const { company_name, email, country, privy_user_id, wallet_address } = req.body;
+    const { company_name, email, country, wallet_address } = req.body;
 
     if (!company_name || !email || !country) {
       return failure(res, "company_name, email and country are required");
@@ -22,8 +21,9 @@ router.post("/signup", async (req: Request, res: Response) => {
       company_name,
       email,
       country,
-      privy_user_id,
       wallet_address,
+      employees: [],       // 👈 ensure arrays exist
+      transactions: [],    // 👈 ensure arrays exist
     });
 
     return success(res, employer, "Employer registered successfully");
